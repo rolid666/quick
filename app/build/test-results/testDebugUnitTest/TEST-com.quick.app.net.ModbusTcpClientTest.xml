@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.quick.app.net.ModbusTcpClientTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-07T15:25:58" hostname="DESKTOP-T2R0P5R" time="0.26">
+  <properties/>
+  <testcase name="全读请求字节与厂家报文格式一致" classname="com.quick.app.net.ModbusTcpClientTest" time="0.041"/>
+  <testcase name="异常应答抛出 ModbusException" classname="com.quick.app.net.ModbusTcpClientTest" time="0.003"/>
+  <testcase name="FC06 写寄存器回显正确" classname="com.quick.app.net.ModbusTcpClientTest" time="0.001"/>
+  <testcase name="仪器不应答时抛出超时" classname="com.quick.app.net.ModbusTcpClientTest" time="0.202"/>
+  <testcase name="按厂家示例值解析寄存器缩放与结果判定" classname="com.quick.app.net.ModbusTcpClientTest" time="0.011"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

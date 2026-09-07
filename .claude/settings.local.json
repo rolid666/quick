@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"C:/Gradle/gradle-8.9/bin/gradle.bat\" wrapper *)",
+      "Bash(cat \"C:/Users/rolid/Desktop/Quick192AF-App/build-tools/setup-toolchain.ps1\" | grep -i -B2 -A8 \"gradle\" | head -50)",
+      "Read(//c/Users/rolid/Desktop/Quick192AF-App/build-tools/**)",
+      "Bash(./gradlew.bat assembleDebug --no-daemon)",
+      "Bash(./gradlew.bat assembleDebug testDebugUnitTest --no-daemon)"
+    ]
+  }
+}
