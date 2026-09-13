@@ -54,6 +54,9 @@ import com.quick.app.data.db.MeasurementRecord
 import com.quick.app.ui.SearchableSelect
 import com.quick.app.ui.StatusChip
 import com.quick.app.ui.hms
+import com.quick.app.ui.intTempText
+import com.quick.app.ui.leakText
+import com.quick.app.ui.rangeText
 import com.quick.app.ui.tempText
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -212,32 +215,38 @@ private fun LiveTempCard(state: MeasureUiState) {
     }
 }
 
+/**
+ * 仪器信息卡（字段语义为实机实测版）：
+ * 设备信息 0x0A~0x19、目标温度 0x1B、温度范围 0x1C~0x1D、漏地电压 0x02、结果保存 0x1E。
+ */
 @Composable
 private fun InstrumentInfo(state: MeasureUiState, wide: Boolean) {
     val s = state.snapshot
-    val sn = s?.deviceSn ?: "--"
-    val setT = s?.setTemp?.let { "$it ℃" } ?: "--"
-    val tol = s?.tolerance?.let { "±$it ℃" } ?: "--"
-    val flag = s?.hasResult?.let { if (it) "1（新结果）" else "0" } ?: "--"
+    val info = s?.deviceInfo ?: "--"
+    val target = intTempText(s?.targetTemp)
+    val range = rangeText(s?.tempLow, s?.tempHigh)
+    val leak = leakText(s?.leakageMv)
+    val flag = s?.saveFlagRaw?.let { if (it != 0) "$it（保存中）" else "0（待命）" } ?: "--"
     Card(Modifier.fillMaxWidth()) {
-        if (wide) {
-            Row(Modifier.padding(14.dp), horizontalArrangement = Arrangement.spacedBy(28.dp)) {
-                InfoItem("仪器 SN", sn); InfoItem("设定温度", setT)
-                InfoItem("误差范围", tol); InfoItem("上传标志", flag)
-            }
-        } else {
-            // 手机窄屏：2×2 排布
-            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) { InfoItem("仪器 SN", sn); InfoItem("设定温度", setT) }
-                Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) { InfoItem("误差范围", tol); InfoItem("上传标志", flag) }
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            InfoItem("设备信息", info)
+            if (wide) {
+                Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
+                    InfoItem("目标温度", target); InfoItem("温度范围", range)
+                    InfoItem("漏地电压", leak); InfoItem("结果保存", flag)
+                }
+            } else {
+                // 手机窄屏：2×2 排布
+                Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) { InfoItem("目标温度", target); InfoItem("温度范围", range) }
+                Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) { InfoItem("漏地电压", leak); InfoItem("结果保存", flag) }
             }
         }
     }
 }
 
 @Composable
-private fun InfoItem(label: String, value: String) {
-    Column {
+private fun InfoItem(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier) {
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
             maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -284,6 +293,10 @@ private fun LastResultCard(rec: MeasurementRecord?) {
                 }
                 Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
                     Text("${rec.lineName} / ${rec.modelName}".ifBlank { "未选线别/机种" })
+                    Text("目标 ${intTempText(rec.targetTemp)}")
+                }
+                Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                    Text("漏地 ${leakText(rec.leakageMv)}")
                     Text("已自动保存 ✓")
                 }
             }
@@ -338,7 +351,7 @@ private fun ResultOverlay(rec: MeasurementRecord, onDismiss: () -> Unit) {
                     maxLines = 1)
                 Text(tempText(rec.measuredTemp), fontSize = 90.sp, color = Color.White, fontWeight = FontWeight.Bold,
                     maxLines = 1)
-                Text("${rec.lineName} / ${rec.modelName}　设定 ${rec.setTemp?.let { "$it ℃" } ?: "--"}",
+                Text("${rec.lineName} / ${rec.modelName}　目标 ${intTempText(rec.targetTemp)}",
                     fontSize = 26.sp, color = Color.White)
                 Text("已自动保存到记录", fontSize = 26.sp, color = Color.White, modifier = Modifier.padding(top = 14.dp))
             }

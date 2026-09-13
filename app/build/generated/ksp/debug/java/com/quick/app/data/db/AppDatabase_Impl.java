@@ -40,7 +40,7 @@ public final class AppDatabase_Impl extends AppDatabase {
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(2) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(3) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS `line` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `enabled` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL)");
@@ -48,12 +48,12 @@ public final class AppDatabase_Impl extends AppDatabase {
         db.execSQL("CREATE TABLE IF NOT EXISTS `model` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `enabled` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL)");
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_model_name` ON `model` (`name`)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `device_config` (`id` INTEGER NOT NULL, `name` TEXT NOT NULL, `ip` TEXT NOT NULL, `port` INTEGER NOT NULL, `unitId` INTEGER NOT NULL, `pollIntervalMs` INTEGER NOT NULL, `timeoutMs` INTEGER NOT NULL, `autoStart` INTEGER NOT NULL, PRIMARY KEY(`id`))");
-        db.execSQL("CREATE TABLE IF NOT EXISTS `measurement_record` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `snapshotKey` TEXT NOT NULL, `timestampMs` INTEGER NOT NULL, `lineName` TEXT NOT NULL, `modelName` TEXT NOT NULL, `deviceSn` TEXT, `deviceIp` TEXT NOT NULL, `setTemp` INTEGER, `measuredTemp` INTEGER, `tolerance` INTEGER, `result` TEXT NOT NULL)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `measurement_record` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `snapshotKey` TEXT NOT NULL, `timestampMs` INTEGER NOT NULL, `lineName` TEXT NOT NULL, `modelName` TEXT NOT NULL, `deviceInfo` TEXT, `deviceIp` TEXT NOT NULL, `targetTemp` INTEGER, `tempLow` INTEGER, `tempHigh` INTEGER, `measuredTemp` REAL, `leakageMv` REAL, `result` TEXT NOT NULL)");
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_measurement_record_snapshotKey` ON `measurement_record` (`snapshotKey`)");
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_measurement_record_timestampMs` ON `measurement_record` (`timestampMs`)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `app_setting` (`key` TEXT NOT NULL, `value` TEXT NOT NULL, PRIMARY KEY(`key`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6cdc2b069331c041a7301daf5aa22c32')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9753f374c84c874f667a38a54487942d')");
       }
 
       @Override
@@ -156,17 +156,19 @@ public final class AppDatabase_Impl extends AppDatabase {
                   + " Expected:\n" + _infoDeviceConfig + "\n"
                   + " Found:\n" + _existingDeviceConfig);
         }
-        final HashMap<String, TableInfo.Column> _columnsMeasurementRecord = new HashMap<String, TableInfo.Column>(11);
+        final HashMap<String, TableInfo.Column> _columnsMeasurementRecord = new HashMap<String, TableInfo.Column>(13);
         _columnsMeasurementRecord.put("id", new TableInfo.Column("id", "INTEGER", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMeasurementRecord.put("snapshotKey", new TableInfo.Column("snapshotKey", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMeasurementRecord.put("timestampMs", new TableInfo.Column("timestampMs", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMeasurementRecord.put("lineName", new TableInfo.Column("lineName", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMeasurementRecord.put("modelName", new TableInfo.Column("modelName", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
-        _columnsMeasurementRecord.put("deviceSn", new TableInfo.Column("deviceSn", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsMeasurementRecord.put("deviceInfo", new TableInfo.Column("deviceInfo", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMeasurementRecord.put("deviceIp", new TableInfo.Column("deviceIp", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
-        _columnsMeasurementRecord.put("setTemp", new TableInfo.Column("setTemp", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
-        _columnsMeasurementRecord.put("measuredTemp", new TableInfo.Column("measuredTemp", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
-        _columnsMeasurementRecord.put("tolerance", new TableInfo.Column("tolerance", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsMeasurementRecord.put("targetTemp", new TableInfo.Column("targetTemp", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsMeasurementRecord.put("tempLow", new TableInfo.Column("tempLow", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsMeasurementRecord.put("tempHigh", new TableInfo.Column("tempHigh", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsMeasurementRecord.put("measuredTemp", new TableInfo.Column("measuredTemp", "REAL", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsMeasurementRecord.put("leakageMv", new TableInfo.Column("leakageMv", "REAL", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMeasurementRecord.put("result", new TableInfo.Column("result", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         final HashSet<TableInfo.ForeignKey> _foreignKeysMeasurementRecord = new HashSet<TableInfo.ForeignKey>(0);
         final HashSet<TableInfo.Index> _indicesMeasurementRecord = new HashSet<TableInfo.Index>(2);
@@ -193,7 +195,7 @@ public final class AppDatabase_Impl extends AppDatabase {
         }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "6cdc2b069331c041a7301daf5aa22c32", "e515feff61576a66f752d95213cf9ff1");
+    }, "9753f374c84c874f667a38a54487942d", "e655da17347fc22c07748ac220869968");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;

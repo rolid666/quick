@@ -57,6 +57,9 @@ import com.quick.app.export.XlsxExporter
 import com.quick.app.ui.SearchableSelect
 import com.quick.app.ui.dateOnly
 import com.quick.app.ui.fullTime
+import com.quick.app.ui.intTempText
+import com.quick.app.ui.leakText
+import com.quick.app.ui.rangeText
 import com.quick.app.ui.tempText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -139,7 +142,7 @@ fun HistoryScreen() {
                                 OutlinedTextField(
                                     value = filters.kw,
                                     onValueChange = { filters = filters.copy(kw = it) },
-                                    placeholder = { Text("关键词(线别/机种/SN)") },
+                                    placeholder = { Text("关键词(线别/机种/设备信息)") },
                                     leadingIcon = { Icon(Icons.Default.Search, null) },
                                     singleLine = true,
                                     modifier = Modifier.weight(1f)
@@ -177,7 +180,7 @@ fun HistoryScreen() {
                                 OutlinedTextField(
                                     value = filters.kw,
                                     onValueChange = { filters = filters.copy(kw = it) },
-                                    placeholder = { Text("关键词(线别/机种/SN)") },
+                                    placeholder = { Text("关键词(线别/机种/设备信息)") },
                                     leadingIcon = { Icon(Icons.Default.Search, null) },
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
@@ -271,7 +274,7 @@ private fun RecordRow(rec: MeasurementRecord, onClick: () -> Unit) {
             Column(Modifier.weight(1f)) {
                 Text("${rec.lineName.ifBlank { "—" }} / ${rec.modelName.ifBlank { "—" }}",
                     style = MaterialTheme.typography.bodyLarge)
-                Text("SN: ${rec.deviceSn?.ifBlank { "—" } ?: "—"}　设定 ${rec.setTemp?.let { "$it℃" } ?: "--"}",
+                Text("设备: ${rec.deviceInfo?.ifBlank { "—" } ?: "—"}　目标 ${intTempText(rec.targetTemp)}　漏地 ${leakText(rec.leakageMv)}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -301,12 +304,14 @@ private fun DetailDialog(rec: MeasurementRecord, onDismiss: () -> Unit) {
                 DetailLine("时间", fullTime(rec.timestampMs))
                 DetailLine("线别", rec.lineName.ifBlank { "—" })
                 DetailLine("机种", rec.modelName.ifBlank { "—" })
-                DetailLine("设备 SN", rec.deviceSn?.ifBlank { "—" } ?: "—")
+                DetailLine("设备信息", rec.deviceInfo?.ifBlank { "—" } ?: "—")
                 DetailLine("设备 IP", rec.deviceIp)
-                DetailLine("设定温度", rec.setTemp?.let { "$it ℃" } ?: "—")
+                DetailLine("目标温度", intTempText(rec.targetTemp))
+                DetailLine("温度范围", rangeText(rec.tempLow, rec.tempHigh))
                 DetailLine("测量温度", tempText(rec.measuredTemp))
-                DetailLine("误差范围", rec.tolerance?.let { "±$it ℃" } ?: "—")
-                DetailLine("判定来源", "仪器 0x1E（App 不参与判定）")
+                DetailLine("漏地电压", leakText(rec.leakageMv))
+                DetailLine("判定来源", "仪器 0x04（0=NG 非0=OK，App 不参与判定）")
+                DetailLine("触发来源", "仪器 0x1E 保存标志")
                 Spacer(Modifier.padding(6.dp))
                 TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) { Text("关闭") }
             }

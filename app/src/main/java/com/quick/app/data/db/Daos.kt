@@ -97,7 +97,7 @@ interface RecordDao {
           AND (:result IS NULL OR result = :result)
           AND (:kw IS NULL OR lineName LIKE '%' || :kw || '%'
                        OR modelName LIKE '%' || :kw || '%'
-                       OR deviceSn LIKE '%' || :kw || '%')
+                       OR deviceInfo LIKE '%' || :kw || '%')
         ORDER BY timestampMs DESC, id DESC
         LIMIT 20000
         """

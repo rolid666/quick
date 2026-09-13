@@ -37,6 +37,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -58,10 +59,13 @@ import androidx.compose.ui.window.Dialog
 import androidx.core.content.FileProvider
 import com.quick.app.QuickApp
 import com.quick.app.config.ConfigBackup
+import com.quick.app.data.db.AppSetting
 import com.quick.app.data.db.DeviceConfig
+import com.quick.app.net.LocalIp
 import com.quick.app.qr.QrGen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -260,16 +264,54 @@ fun ConfigScreen(openManage: () -> Unit, openDiag: () -> Unit) {
 
 // ---------- 配网二维码 ----------
 
+/** 上次输入的配网参数（记忆用，存 app_setting，仅本机） */
+private const val KEY_WIFI_QR_LAST = "wifi.qr.last"
+
 @Composable
 private fun WifiQrDialog(app: QuickApp, onDismiss: () -> Unit) {
     val cfg by app.db.configDao().get().collectAsState(initial = null)
+    val scope = rememberCoroutineScope()
     var wifiName by remember { mutableStateOf("") }
     var wifiPwd by remember { mutableStateOf("") }
-    var devIp by remember { mutableStateOf(cfg?.ip ?: "") }
-    var port by remember { mutableStateOf((cfg?.port ?: 502).toString()) }
+    var devIp by remember { mutableStateOf("") }
+    var port by remember { mutableStateOf("502") }
     var gateway by remember { mutableStateOf("") }
 
     var payload by remember { mutableStateOf<String?>(null) }
+    var ifaces by remember { mutableStateOf(LocalIp.list()) }
+
+    // 打开弹窗：读本机网络地址 + 回填上次输入的参数（不用每次重输）
+    LaunchedEffect(Unit) {
+        ifaces = LocalIp.list()
+        val saved = runCatching { app.db.settingDao().get(KEY_WIFI_QR_LAST) }.getOrNull()
+        if (!saved.isNullOrBlank()) {
+            runCatching {
+                val o = JSONObject(saved)
+                wifiName = o.optString("wifiName", "")
+                wifiPwd = o.optString("wifiPassword", "")
+                devIp = o.optString("instrumentIp", "")
+                port = o.optInt("port", 502).toString()
+                gateway = o.optString("gateway", "")
+            }
+        }
+    }
+    // 记忆中没有仪器 IP 时，用「配置页当前仪器 IP」兜底（cfg 异步加载完成后回填）
+    LaunchedEffect(cfg) {
+        cfg?.let { if (devIp.isBlank()) devIp = it.ip }
+    }
+
+    /** 生成即记忆：下次打开自动回填 */
+    fun rememberInputs() {
+        val o = JSONObject()
+            .put("wifiName", wifiName.trim())
+            .put("wifiPassword", wifiPwd.trim())
+            .put("instrumentIp", devIp.trim())
+            .put("port", port.trim().toIntOrNull() ?: 502)
+            .put("gateway", gateway.trim())
+        scope.launch(Dispatchers.IO) {
+            runCatching { app.db.settingDao().put(AppSetting(KEY_WIFI_QR_LAST, o.toString())) }
+        }
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(Modifier.fillMaxWidth()) {
@@ -278,6 +320,38 @@ private fun WifiQrDialog(app: QuickApp, onDismiss: () -> Unit) {
                 Text("生成 191AF+ 配网二维码", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 Text("生成后仪器在 [无线协议=MB-TCP] 下依次扫描配置。示例：WifiName=Quick-service,WifiPassword=…,ServerIP=192.168.x.x,ServerPort=502,GateWay=…",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                // ---- 本机网络地址：手机热点无法手动设 IP，仪器必须配同网段地址 ----
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("本机网络地址", style = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.weight(1f))
+                            TextButton(onClick = { ifaces = LocalIp.list() }) { Text("刷新") }
+                        }
+                        if (ifaces.isEmpty()) {
+                            Text("未读取到 IP：请先连接 Wi-Fi 或开启热点，再点「刷新」。",
+                                style = MaterialTheme.typography.bodySmall)
+                        } else {
+                            ifaces.forEach { f ->
+                                Text("${f.label}（${f.name}）　${f.ip}",
+                                    style = MaterialTheme.typography.bodyMedium)
+                            }
+                            val primary = ifaces.first()
+                            Text("仪器 ServerIP 需与本机同网段：${primary.subnet}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            TextButton(onClick = { devIp = LocalIp.suggestInstrumentIp(primary) }) {
+                                Text("填入建议 IP ${LocalIp.suggestInstrumentIp(primary)}")
+                            }
+                        }
+                    }
+                }
+
                 OutlinedTextField(wifiName, { wifiName = it }, label = { Text("Wi-Fi 名 (WifiName)") }, singleLine = true)
                 OutlinedTextField(wifiPwd, { wifiPwd = it }, label = { Text("Wi-Fi 密码 (WifiPassword)") }, singleLine = true)
                 OutlinedTextField(devIp, { devIp = it }, label = { Text("仪器静态 IP (ServerIP)") }, singleLine = true)
@@ -285,8 +359,11 @@ private fun WifiQrDialog(app: QuickApp, onDismiss: () -> Unit) {
                     OutlinedTextField(port, { port = it }, label = { Text("端口 (ServerPort)") }, singleLine = true, modifier = Modifier.weight(1f))
                     OutlinedTextField(gateway, { gateway = it }, label = { Text("网关 (GateWay，可选)") }, singleLine = true, modifier = Modifier.weight(1.4f))
                 }
+                Text("输入内容会记住（仅保存在本机），下次打开自动回填。",
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Button(
                     onClick = {
+                        rememberInputs()
                         payload = QrGen.wifiConfigPayload(
                             wifiName.trim(), wifiPwd.trim(), devIp.trim(),
                             port.trim().toIntOrNull() ?: 502,

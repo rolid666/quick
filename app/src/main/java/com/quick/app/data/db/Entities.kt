@@ -38,14 +38,15 @@ data class DeviceConfig(
     @ColumnInfo val ip: String = "",
     @ColumnInfo val port: Int = Registers.DEFAULT_PORT,
     @ColumnInfo val unitId: Int = Registers.DEFAULT_UNIT_ID,
-    @ColumnInfo val pollIntervalMs: Long = 1000,   // 轮询周期（厂家建议约 1s）
+    @ColumnInfo val pollIntervalMs: Long = 500,    // 轮询周期（0x1E 保存标志保持时长未实测，按 0.5s 抓取）
     @ColumnInfo val timeoutMs: Long = 2000,        // 连接/读超时
     @ColumnInfo val autoStart: Boolean = true      // 打开 App 自动开始采集
 )
 
 /**
  * 测量记录（历史数据，绝不参与配置导出/导入）。
- * result 由仪器 0x1E 判定（0=NG 1=OK），App 只记录不判定。
+ * result 由仪器 0x04 判定（0=NG 非 0=OK），App 只记录不判定。
+ * 字段语义为实机实测修正版（见 Registers.kt 注释）。
  */
 @Entity(
     tableName = "measurement_record",
@@ -57,12 +58,15 @@ data class MeasurementRecord(
     @ColumnInfo val timestampMs: Long,     // App 收到该结果的时刻
     @ColumnInfo val lineName: String,
     @ColumnInfo val modelName: String,
-    @ColumnInfo val deviceSn: String?,     // 仪器 0x0A~0x19 读取的 SN
+    @ColumnInfo val deviceInfo: String?,   // 0x0A~0x19 设备显示字符串（可空）
     @ColumnInfo val deviceIp: String,
-    @ColumnInfo val setTemp: Int?,         // 0x1A ℃
-    @ColumnInfo val measuredTemp: Int?,    // 0x1D ℃（系数 1）
-    @ColumnInfo val tolerance: Int?,       // 0x1B ±℃
-    @ColumnInfo val result: String         // "OK" / "NG"
+    @ColumnInfo val targetTemp: Int?,      // 0x1B 设定温度目标值 ℃
+    @ColumnInfo val tempLow: Int?,         // 0x1C 温度下限 ℃
+    @ColumnInfo val tempHigh: Int?,        // 0x1D 温度上限 ℃
+    @ColumnInfo val measuredTemp: Double?, // 保存时的测量温度 ℃（×0.1）
+                                           // 真值寄存器未实测出，暂取触发帧 0x00 实时温度，找到后一处替换
+    @ColumnInfo val leakageMv: Double?,    // 0x02 漏地电压 mV（×0.1）
+    @ColumnInfo val result: String         // "OK" / "NG"（来自 0x04）
 ) {
     val isOk: Boolean get() = result == "OK"
 

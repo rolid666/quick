@@ -52,7 +52,7 @@ class CollectionService : Service() {
         val text = when (val c = s.conn) {
             is ConnState.Connected -> {
                 val t = s.snapshot?.liveTempC?.let { "%.1f℃".format(it) } ?: "--"
-                val line = if (s.snapshot?.hasResult == true) " ★有结果待收" else ""
+                val line = if (s.snapshot?.hasSaveFlag == true) " ★保存中" else ""
                 "已连接 ${c.ip}:${c.port}｜当前 ${t}$line"
             }
             is ConnState.Connecting -> "连接中…"

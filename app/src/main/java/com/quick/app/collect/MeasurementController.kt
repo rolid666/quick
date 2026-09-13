@@ -51,9 +51,10 @@ data class MeasureUiState(
  * 采集控制器：唯一拥有轮询循环与状态机的组件（App 级单例，QuickApp 持有）。
  *
  * 数据可靠性设计（见 docs/可行性分析与通讯规格-V1.0.md §6/§7）：
- * 1. 每轮只发 1 个请求一次全读 31 寄存器 —— 0x1C 与 0x1D/0x1E 同帧快照；
- * 2. 收到 0x1C=1 立即把结果先写 pending 表（同库）再幂等插入正式表，最后清 pending；
- *    崩溃只可能发生在 [插库成功, 清 pending] 之间，重启后补记被幂等键吸收；
+ * 1. 每轮只发 1 个请求一次全读 31 寄存器 —— 0x1E 保存标志与温度/判定/漏压同帧快照，
+ *    保证「一笔结果」的温度、判定、漏地电压取自同一瞬间；
+ * 2. 0x1E 由 0 变非 0 视为新一次保存，立即把结果先写 pending 表（同库）再幂等插入正式表，
+ *    最后清 pending；崩溃只可能发生在 [插库成功, 清 pending] 之间，重启后补记被幂等键吸收；
  * 3. 单协程串行执行，无并发读写仪器，天然防重入。
  */
 class MeasurementController(private val app: Application, val db: AppDatabase) {
@@ -83,6 +84,16 @@ class MeasurementController(private val app: Application, val db: AppDatabase) {
     @Volatile private var _line: String? = null
     @Volatile private var _model: String? = null
     @Volatile private var cfgCache: DeviceConfig? = null
+
+    /**
+     * 上一次全读的 0x1E 值 —— 保存标志按下后「保持一段时间」期间会连续读到非 0，
+     * 若按「非 0 即记录」会重复入库；保持时长未实测，故用「值发生变化」判定新一次保存。
+     * 跨重连保留，避免重连后把仍保持的值当作新结果。
+     */
+    @Volatile private var lastSaveFlag: Int? = null
+
+    /** 上一笔已记录结果的内容签名（见 [DeviceSnapshot.contentSignature]），用于保持期内的第二笔 */
+    @Volatile private var lastSavedSignature: String? = null
 
     suspend fun init() {
         _line = db.settingDao().get(KEY_LINE)
@@ -151,9 +162,13 @@ class MeasurementController(private val app: Application, val db: AppDatabase) {
             client.disconnect()
             val snap = DeviceSnapshot.parse(regs)
             postLog("PROBE 解码: 实时温度=${snap.liveTempC?.let { "%.1f".format(it) } ?: "--"}℃ " +
-                "单位=${if (snap.unit == 1) "℉" else "℃"} 自动保存=${snap.saveMode} 关机=${snap.autoOffMin}min " +
-                "SN=${snap.deviceSn} 设定=${snap.setTemp} 误差=${snap.tolerance}")
-            postLog("PROBE 0x1C=${if (snap.hasResult) 1 else 0} 0x1D=${snap.savedTemp} 0x1E=${if (snap.judgedOk == true) 1 else if (snap.judgedOk == false) 0 else -1}")
+                "单位=${if (snap.unit == 1) "℉" else "℃"} " +
+                "漏地电压=${snap.leakageMv?.let { "%.1f".format(it) } ?: "--"}mV " +
+                "自动关机=${snap.autoOffMin}min")
+            postLog("PROBE 设备信息(0x0A~0x19)=${snap.deviceInfo ?: "--"}")
+            postLog("PROBE 目标温度(0x1B)=${snap.targetTemp} 温度范围(0x1C~0x1D)=${snap.tempLow}~${snap.tempHigh} " +
+                "保存标志(0x1E)=${snap.saveFlagRaw}")
+            postLog("PROBE 判定(0x04)=${when (snap.judgedOk) { true -> "OK"; false -> "NG"; null -> "--" }}（0=NG，非0=OK）")
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -186,9 +201,17 @@ class MeasurementController(private val app: Application, val db: AppDatabase) {
                     _ui.update {
                         it.copy(snapshot = snap, conn = ConnState.Connected(cfg.ip, cfg.port), lastError = null)
                     }
-                    if (snap.hasResult) {
+                    // 触发（判定/温度/漏压取同一帧，协议层原子）：
+                    //   0x1E 由 0 变非 0  → 新一次保存，记录；
+                    //   保持期内值不变   → 跳过，避免同一笔重复入库；
+                    //   保持期内又按一次 → 标志不回 0，改用内容签名差异识别（如 NG 后立刻复测 OK）。
+                    val flag = snap.saveFlagRaw ?: 0
+                    val sig = snap.contentSignature
+                    if (flag != 0 && (flag != lastSaveFlag || sig != lastSavedSignature)) {
                         storeResult(snap, cfg)
+                        lastSavedSignature = sig
                     }
+                    lastSaveFlag = flag
                     delay(cfg.pollIntervalMs)
                 }
                 if (scope.isActive && isRunning) {
@@ -219,19 +242,24 @@ class MeasurementController(private val app: Application, val db: AppDatabase) {
      */
     private suspend fun storeResult(snap: DeviceSnapshot, cfg: DeviceConfig) {
         val now = System.currentTimeMillis()
-        val ok = snap.judgedOk == true
+        val ok = snap.judgedOk == true   // 0x04：0=NG，非 0=OK
+        // measuredTemp 暂用触发帧的 0x00 实时温度（真值寄存器待实测，届时只改这一处）
+        val temp = snap.liveTempC
         val rec = MeasurementRecord(
-            snapshotKey = "$now-${snap.savedTemp}-${ok}-${_line.orEmpty()}-${_model.orEmpty()}",
+            snapshotKey = "$now-${temp}-${ok}-${_line.orEmpty()}-${_model.orEmpty()}",
             timestampMs = now,
             lineName = _line ?: "",
             modelName = _model ?: "",
-            deviceSn = snap.deviceSn,
+            deviceInfo = snap.deviceInfo,
             deviceIp = cfg.ip,
-            setTemp = snap.setTemp,
-            measuredTemp = snap.savedTemp,
-            tolerance = snap.tolerance,
+            targetTemp = snap.targetTemp,
+            tempLow = snap.tempLow,
+            tempHigh = snap.tempHigh,
+            measuredTemp = temp,
+            leakageMv = snap.leakageMv,
             result = if (ok) "OK" else "NG"
         )
+        val tempText = temp?.let { String.format(java.util.Locale.US, "%.1f℃", it) } ?: "--"
         val pendingKey = PENDING_PREFIX + rec.snapshotKey
         val json = rec.toJson().toString()
         try {
@@ -239,9 +267,9 @@ class MeasurementController(private val app: Application, val db: AppDatabase) {
             val id = db.recordDao().insert(rec)
             db.settingDao().delete(pendingKey)
             if (id == -1L) {
-                postLog("结果重复，已跳过：${rec.measuredTemp}℃ ${rec.result}（${timeText(now)}）")
+                postLog("结果重复，已跳过：$tempText ${rec.result}（${timeText(now)}）")
             } else {
-                postLog("★ 结果已保存：${rec.measuredTemp}℃ ${rec.result}（${_line} / ${_model}）")
+                postLog("★ 结果已保存：$tempText ${rec.result}（${_line} / ${_model}）")
                 _ui.update { it.copy(lastRecord = rec) }
                 _resultEvents.tryEmit(rec)
             }
@@ -322,25 +350,36 @@ fun MeasurementRecord.toJson(): JSONObject = JSONObject().apply {
     put("timestampMs", timestampMs)
     put("lineName", lineName)
     put("modelName", modelName)
-    put("deviceSn", deviceSn ?: JSONObject.NULL)
+    put("deviceInfo", deviceInfo ?: JSONObject.NULL)
     put("deviceIp", deviceIp)
-    put("setTemp", setTemp ?: JSONObject.NULL)
+    put("targetTemp", targetTemp ?: JSONObject.NULL)
+    put("tempLow", tempLow ?: JSONObject.NULL)
+    put("tempHigh", tempHigh ?: JSONObject.NULL)
     put("measuredTemp", measuredTemp ?: JSONObject.NULL)
-    put("tolerance", tolerance ?: JSONObject.NULL)
+    put("leakageMv", leakageMv ?: JSONObject.NULL)
     put("result", result)
 }
 
+private fun JSONObject.strOrNull(key: String): String? =
+    if (!has(key) || isNull(key)) null else optString(key).ifBlank { null }
+
+private fun JSONObject.intOrNull(key: String): Int? =
+    if (!has(key) || isNull(key)) null else optInt(key)
+
+/** 兼容读取：v3 前的 pending JSON 用的是 deviceSn / setTemp 键名 */
 fun MeasurementRecord.Companion.fromJson(o: JSONObject): MeasurementRecord? = try {
     MeasurementRecord(
         snapshotKey = o.getString("snapshotKey"),
         timestampMs = o.getLong("timestampMs"),
         lineName = o.optString("lineName"),
         modelName = o.optString("modelName"),
-        deviceSn = if (o.isNull("deviceSn")) null else o.optString("deviceSn"),
+        deviceInfo = o.strOrNull("deviceInfo") ?: o.strOrNull("deviceSn"),
         deviceIp = o.optString("deviceIp"),
-        setTemp = if (o.isNull("setTemp")) null else o.optInt("setTemp"),
-        measuredTemp = if (o.isNull("measuredTemp")) null else o.optInt("measuredTemp"),
-        tolerance = if (o.isNull("tolerance")) null else o.optInt("tolerance"),
+        targetTemp = o.intOrNull("targetTemp") ?: o.intOrNull("setTemp"),
+        tempLow = o.intOrNull("tempLow"),
+        tempHigh = o.intOrNull("tempHigh"),
+        measuredTemp = if (o.isNull("measuredTemp")) null else o.optDouble("measuredTemp"),
+        leakageMv = if (o.isNull("leakageMv")) null else o.optDouble("leakageMv"),
         result = o.optString("result", "NG")
     )
 } catch (_: Exception) {

@@ -2,6 +2,7 @@ package com.quick.app.net
 
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.DataInputStream
@@ -105,21 +106,24 @@ class ModbusTcpClientTest {
     }
 
     @Test
-    fun `按厂家示例值解析寄存器缩放与结果判定`() {
-        // 复刻厂家示例 RX 语义：0x00=00EA(234 → 23.4℃)，0x1A=350，0x1B=10，
-        // 0x1C=1, 0x1D=351, 0x1E=1，0x01=0(℃)，0x0A 起存 "QK-HT-001"
+    fun `按实机实测映射解析寄存器`() {
+        // 实机实测（2026-09，已取代厂家文档语义，见 Registers.kt）：
+        // 0x00=0x00EA(234 → 23.4℃)、0x01=0(℃)、0x02=67(6.7mV)、0x03=15(min)、0x04=1(OK)、
+        // 0x0A 起 "QK-HT-001"、0x1B=350(目标)、0x1C=280(下限)、0x1D=320(上限)、0x1E=0x14(刚按下保存)
         val regs = IntArray(Registers.TOTAL)
         regs[0x00] = 0x00EA
         regs[0x01] = 0
+        regs[0x02] = 67
+        regs[0x03] = 15
+        regs[0x04] = 1
         val snBytes = "QK-HT-001".toByteArray(Charsets.US_ASCII)
         val pad = ByteArray(32 - snBytes.size)
         val snRegs = (snBytes + pad).toList().chunked(2).map { ((it[0].toInt() and 0xFF) shl 8) or (it[1].toInt() and 0xFF) }
         snRegs.forEachIndexed { i, v -> regs[0x0A + i] = v }
-        regs[0x1A] = 350
-        regs[0x1B] = 10
-        regs[0x1C] = 1
-        regs[0x1D] = 351
-        regs[0x1E] = 1
+        regs[0x1B] = 350
+        regs[0x1C] = 280
+        regs[0x1D] = 320
+        regs[0x1E] = 0x14
 
         val dev = MockDevice { _, tx, unit -> readResponse(tx, unit, regs) }.also { it.start() }
         val client = ModbusTcpClient()
@@ -128,18 +132,59 @@ class ModbusTcpClientTest {
             val got = client.readHoldingRegisters(0, Registers.TOTAL)
             val snap = DeviceSnapshot.parse(got)
             assertEquals(31, got.size)
-            assertEquals(23.4, snap.liveTempC!!, 0.001)
+            assertEquals(23.4, snap.liveTempC!!, 0.001)   // 0x00 ×0.1
             assertEquals(0, snap.unit)
-            assertEquals("QK-HT-001", snap.deviceSn)
-            assertEquals(350, snap.setTemp)
-            assertEquals(10, snap.tolerance)
-            assertTrue(snap.hasResult)
-            assertEquals(351, snap.savedTemp)   // 系数 1：351 ℃（不能用 0.1 缩放）
-            assertEquals(true, snap.judgedOk)
+            assertEquals(6.7, snap.leakageMv!!, 0.001)    // 0x02 ×0.1 mV
+            assertEquals(15, snap.autoOffMin)
+            assertEquals(true, snap.judgedOk)             // 0x04 非 0 = OK
+            assertEquals("QK-HT-001", snap.deviceInfo)    // 0x0A~0x19 ASCII
+            assertEquals(350, snap.targetTemp)            // 0x1B ×1，不缩放
+            assertEquals(280, snap.tempLow)
+            assertEquals(320, snap.tempHigh)
+            assertEquals(0x14, snap.saveFlagRaw)
+            assertTrue(snap.hasSaveFlag)
         } finally {
             client.disconnect()
             dev.stop()
         }
+    }
+
+    @Test
+    fun `判定 0x04 为 0 是 NG 非 0 是 OK`() {
+        // 实测：0=NG；OK 实测见过 1 与 2 两种值，故一律按「非 0」处理，不写死具体数值
+        for (v in intArrayOf(0, 1, 2)) {
+            val regs = IntArray(Registers.TOTAL)
+            regs[Registers.JUDGE] = v
+            val snap = DeviceSnapshot.parse(regs)
+            assertEquals("0x04=$v 时判定应为 ${v != 0}", v != 0, snap.judgedOk)
+        }
+    }
+
+    @Test
+    fun `保存标志未按下时不触发`() {
+        val regs = IntArray(Registers.TOTAL)   // 全 0 = 仪器待机
+        val snap = DeviceSnapshot.parse(regs)
+        assertEquals(0, snap.saveFlagRaw)
+        assertTrue(!snap.hasSaveFlag)
+        assertEquals(null, snap.deviceInfo)    // 空字符串 → null，不占列表
+    }
+
+    @Test
+    fun `内容签名只随判定与目标变化 不随实时温度或漏压变化`() {
+        // 用途：0x1E 保持期内又按一次保存时标志不回 0，靠签名差异识别第二笔（如 NG 后复测 OK）；
+        // 而实时温度与漏地电压持续变化，若纳入签名会导致保持期内反复误触发。
+        fun snapOf(judge: Int, target: Int, live: Int, leak: Int): DeviceSnapshot {
+            val regs = IntArray(Registers.TOTAL)
+            regs[Registers.JUDGE] = judge
+            regs[Registers.TARGET_TEMP] = target
+            regs[Registers.TEMP] = live
+            regs[Registers.LEAKAGE] = leak
+            return DeviceSnapshot.parse(regs)
+        }
+        val base = snapOf(0, 350, 218, 12)
+        assertEquals(base.contentSignature, snapOf(0, 350, 3510, 99).contentSignature)
+        assertNotEquals(base.contentSignature, snapOf(1, 350, 218, 12).contentSignature)
+        assertNotEquals(base.contentSignature, snapOf(0, 360, 218, 12).contentSignature)
     }
 
     @Test

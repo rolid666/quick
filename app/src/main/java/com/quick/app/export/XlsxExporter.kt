@@ -16,7 +16,7 @@ import java.util.zip.ZipOutputStream
  */
 object XlsxExporter {
 
-    private const val COLUMNS = 10
+    private const val COLUMNS = 12
 
     /** @param headerDates true=时间列输出为日期单元格，false=按文本输出（保持导出所见即所得） */
     fun export(records: List<MeasurementRecord>, file: File, headerDates: Boolean = false) {
@@ -58,12 +58,14 @@ object XlsxExporter {
                 formatTime(r.timestampMs),
                 r.lineName,
                 r.modelName,
-                r.deviceSn ?: "",
+                r.deviceInfo ?: "",                      // 0x0A~0x19 设备显示字符串
                 r.deviceIp,
-                r.setTemp?.toString() ?: "",
-                r.measuredTemp?.toString() ?: "",
-                (r.tolerance?.let { "±$it" }) ?: "",
-                r.result
+                r.targetTemp?.toString() ?: "",          // 0x1B
+                r.tempLow?.toString() ?: "",             // 0x1C
+                r.tempHigh?.toString() ?: "",            // 0x1D
+                num(r.measuredTemp),                     // 0x00 测量温度，保留 1 位小数
+                num(r.leakageMv),                        // 0x02 漏地电压 ×0.1 mV
+                r.result                                 // 0x04
             )
             sb.append("<row r=\"$row\">")
             for ((i, v) in cells.withIndex()) sb.append(cellXml(row, i + 1, v))
@@ -99,9 +101,13 @@ object XlsxExporter {
         .replace("\"", "&quot;")
         .replace("\n", "&#10;")
 
+    /** 小数字段统一 1 位（温度 ×0.1 ℃、漏地电压 ×0.1 mV），空值留空 */
+    private fun num(v: Double?): String =
+        if (v == null) "" else String.format(Locale.US, "%.1f", v)
+
     private val HEADERS = listOf(
-        "ID", "时间", "线别", "机种", "设备", "设备IP",
-        "设定温度(℃)", "测量温度(℃)", "误差范围", "结果"
+        "ID", "时间", "线别", "机种", "设备信息", "设备IP",
+        "目标温度(℃)", "温度下限(℃)", "温度上限(℃)", "测量温度(℃)", "漏地电压(mV)", "结果"
     )
 
     // ---------- 固定部件 ----------

@@ -13,6 +13,7 @@ import androidx.room.util.CursorUtil;
 import androidx.room.util.DBUtil;
 import androidx.sqlite.db.SupportSQLiteStatement;
 import java.lang.Class;
+import java.lang.Double;
 import java.lang.Exception;
 import java.lang.Integer;
 import java.lang.Long;
@@ -44,7 +45,7 @@ public final class RecordDao_Impl implements RecordDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR IGNORE INTO `measurement_record` (`id`,`snapshotKey`,`timestampMs`,`lineName`,`modelName`,`deviceSn`,`deviceIp`,`setTemp`,`measuredTemp`,`tolerance`,`result`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?,?)";
+        return "INSERT OR IGNORE INTO `measurement_record` (`id`,`snapshotKey`,`timestampMs`,`lineName`,`modelName`,`deviceInfo`,`deviceIp`,`targetTemp`,`tempLow`,`tempHigh`,`measuredTemp`,`leakageMv`,`result`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -55,28 +56,38 @@ public final class RecordDao_Impl implements RecordDao {
         statement.bindLong(3, entity.getTimestampMs());
         statement.bindString(4, entity.getLineName());
         statement.bindString(5, entity.getModelName());
-        if (entity.getDeviceSn() == null) {
+        if (entity.getDeviceInfo() == null) {
           statement.bindNull(6);
         } else {
-          statement.bindString(6, entity.getDeviceSn());
+          statement.bindString(6, entity.getDeviceInfo());
         }
         statement.bindString(7, entity.getDeviceIp());
-        if (entity.getSetTemp() == null) {
+        if (entity.getTargetTemp() == null) {
           statement.bindNull(8);
         } else {
-          statement.bindLong(8, entity.getSetTemp());
+          statement.bindLong(8, entity.getTargetTemp());
         }
-        if (entity.getMeasuredTemp() == null) {
+        if (entity.getTempLow() == null) {
           statement.bindNull(9);
         } else {
-          statement.bindLong(9, entity.getMeasuredTemp());
+          statement.bindLong(9, entity.getTempLow());
         }
-        if (entity.getTolerance() == null) {
+        if (entity.getTempHigh() == null) {
           statement.bindNull(10);
         } else {
-          statement.bindLong(10, entity.getTolerance());
+          statement.bindLong(10, entity.getTempHigh());
         }
-        statement.bindString(11, entity.getResult());
+        if (entity.getMeasuredTemp() == null) {
+          statement.bindNull(11);
+        } else {
+          statement.bindDouble(11, entity.getMeasuredTemp());
+        }
+        if (entity.getLeakageMv() == null) {
+          statement.bindNull(12);
+        } else {
+          statement.bindDouble(12, entity.getLeakageMv());
+        }
+        statement.bindString(13, entity.getResult());
       }
     };
     this.__preparedStmtOfDeleteByKey = new SharedSQLiteStatement(__db) {
@@ -145,7 +156,7 @@ public final class RecordDao_Impl implements RecordDao {
             + "          AND (? IS NULL OR result = ?)\n"
             + "          AND (? IS NULL OR lineName LIKE '%' || ? || '%'\n"
             + "                       OR modelName LIKE '%' || ? || '%'\n"
-            + "                       OR deviceSn LIKE '%' || ? || '%')\n"
+            + "                       OR deviceInfo LIKE '%' || ? || '%')\n"
             + "        ORDER BY timestampMs DESC, id DESC\n"
             + "        LIMIT 20000\n"
             + "        ";
@@ -245,11 +256,13 @@ public final class RecordDao_Impl implements RecordDao {
           final int _cursorIndexOfTimestampMs = CursorUtil.getColumnIndexOrThrow(_cursor, "timestampMs");
           final int _cursorIndexOfLineName = CursorUtil.getColumnIndexOrThrow(_cursor, "lineName");
           final int _cursorIndexOfModelName = CursorUtil.getColumnIndexOrThrow(_cursor, "modelName");
-          final int _cursorIndexOfDeviceSn = CursorUtil.getColumnIndexOrThrow(_cursor, "deviceSn");
+          final int _cursorIndexOfDeviceInfo = CursorUtil.getColumnIndexOrThrow(_cursor, "deviceInfo");
           final int _cursorIndexOfDeviceIp = CursorUtil.getColumnIndexOrThrow(_cursor, "deviceIp");
-          final int _cursorIndexOfSetTemp = CursorUtil.getColumnIndexOrThrow(_cursor, "setTemp");
+          final int _cursorIndexOfTargetTemp = CursorUtil.getColumnIndexOrThrow(_cursor, "targetTemp");
+          final int _cursorIndexOfTempLow = CursorUtil.getColumnIndexOrThrow(_cursor, "tempLow");
+          final int _cursorIndexOfTempHigh = CursorUtil.getColumnIndexOrThrow(_cursor, "tempHigh");
           final int _cursorIndexOfMeasuredTemp = CursorUtil.getColumnIndexOrThrow(_cursor, "measuredTemp");
-          final int _cursorIndexOfTolerance = CursorUtil.getColumnIndexOrThrow(_cursor, "tolerance");
+          final int _cursorIndexOfLeakageMv = CursorUtil.getColumnIndexOrThrow(_cursor, "leakageMv");
           final int _cursorIndexOfResult = CursorUtil.getColumnIndexOrThrow(_cursor, "result");
           final List<MeasurementRecord> _result = new ArrayList<MeasurementRecord>(_cursor.getCount());
           while (_cursor.moveToNext()) {
@@ -264,35 +277,47 @@ public final class RecordDao_Impl implements RecordDao {
             _tmpLineName = _cursor.getString(_cursorIndexOfLineName);
             final String _tmpModelName;
             _tmpModelName = _cursor.getString(_cursorIndexOfModelName);
-            final String _tmpDeviceSn;
-            if (_cursor.isNull(_cursorIndexOfDeviceSn)) {
-              _tmpDeviceSn = null;
+            final String _tmpDeviceInfo;
+            if (_cursor.isNull(_cursorIndexOfDeviceInfo)) {
+              _tmpDeviceInfo = null;
             } else {
-              _tmpDeviceSn = _cursor.getString(_cursorIndexOfDeviceSn);
+              _tmpDeviceInfo = _cursor.getString(_cursorIndexOfDeviceInfo);
             }
             final String _tmpDeviceIp;
             _tmpDeviceIp = _cursor.getString(_cursorIndexOfDeviceIp);
-            final Integer _tmpSetTemp;
-            if (_cursor.isNull(_cursorIndexOfSetTemp)) {
-              _tmpSetTemp = null;
+            final Integer _tmpTargetTemp;
+            if (_cursor.isNull(_cursorIndexOfTargetTemp)) {
+              _tmpTargetTemp = null;
             } else {
-              _tmpSetTemp = _cursor.getInt(_cursorIndexOfSetTemp);
+              _tmpTargetTemp = _cursor.getInt(_cursorIndexOfTargetTemp);
             }
-            final Integer _tmpMeasuredTemp;
+            final Integer _tmpTempLow;
+            if (_cursor.isNull(_cursorIndexOfTempLow)) {
+              _tmpTempLow = null;
+            } else {
+              _tmpTempLow = _cursor.getInt(_cursorIndexOfTempLow);
+            }
+            final Integer _tmpTempHigh;
+            if (_cursor.isNull(_cursorIndexOfTempHigh)) {
+              _tmpTempHigh = null;
+            } else {
+              _tmpTempHigh = _cursor.getInt(_cursorIndexOfTempHigh);
+            }
+            final Double _tmpMeasuredTemp;
             if (_cursor.isNull(_cursorIndexOfMeasuredTemp)) {
               _tmpMeasuredTemp = null;
             } else {
-              _tmpMeasuredTemp = _cursor.getInt(_cursorIndexOfMeasuredTemp);
+              _tmpMeasuredTemp = _cursor.getDouble(_cursorIndexOfMeasuredTemp);
             }
-            final Integer _tmpTolerance;
-            if (_cursor.isNull(_cursorIndexOfTolerance)) {
-              _tmpTolerance = null;
+            final Double _tmpLeakageMv;
+            if (_cursor.isNull(_cursorIndexOfLeakageMv)) {
+              _tmpLeakageMv = null;
             } else {
-              _tmpTolerance = _cursor.getInt(_cursorIndexOfTolerance);
+              _tmpLeakageMv = _cursor.getDouble(_cursorIndexOfLeakageMv);
             }
             final String _tmpResult;
             _tmpResult = _cursor.getString(_cursorIndexOfResult);
-            _item = new MeasurementRecord(_tmpId,_tmpSnapshotKey,_tmpTimestampMs,_tmpLineName,_tmpModelName,_tmpDeviceSn,_tmpDeviceIp,_tmpSetTemp,_tmpMeasuredTemp,_tmpTolerance,_tmpResult);
+            _item = new MeasurementRecord(_tmpId,_tmpSnapshotKey,_tmpTimestampMs,_tmpLineName,_tmpModelName,_tmpDeviceInfo,_tmpDeviceIp,_tmpTargetTemp,_tmpTempLow,_tmpTempHigh,_tmpMeasuredTemp,_tmpLeakageMv,_tmpResult);
             _result.add(_item);
           }
           return _result;
@@ -422,11 +447,13 @@ public final class RecordDao_Impl implements RecordDao {
           final int _cursorIndexOfTimestampMs = CursorUtil.getColumnIndexOrThrow(_cursor, "timestampMs");
           final int _cursorIndexOfLineName = CursorUtil.getColumnIndexOrThrow(_cursor, "lineName");
           final int _cursorIndexOfModelName = CursorUtil.getColumnIndexOrThrow(_cursor, "modelName");
-          final int _cursorIndexOfDeviceSn = CursorUtil.getColumnIndexOrThrow(_cursor, "deviceSn");
+          final int _cursorIndexOfDeviceInfo = CursorUtil.getColumnIndexOrThrow(_cursor, "deviceInfo");
           final int _cursorIndexOfDeviceIp = CursorUtil.getColumnIndexOrThrow(_cursor, "deviceIp");
-          final int _cursorIndexOfSetTemp = CursorUtil.getColumnIndexOrThrow(_cursor, "setTemp");
+          final int _cursorIndexOfTargetTemp = CursorUtil.getColumnIndexOrThrow(_cursor, "targetTemp");
+          final int _cursorIndexOfTempLow = CursorUtil.getColumnIndexOrThrow(_cursor, "tempLow");
+          final int _cursorIndexOfTempHigh = CursorUtil.getColumnIndexOrThrow(_cursor, "tempHigh");
           final int _cursorIndexOfMeasuredTemp = CursorUtil.getColumnIndexOrThrow(_cursor, "measuredTemp");
-          final int _cursorIndexOfTolerance = CursorUtil.getColumnIndexOrThrow(_cursor, "tolerance");
+          final int _cursorIndexOfLeakageMv = CursorUtil.getColumnIndexOrThrow(_cursor, "leakageMv");
           final int _cursorIndexOfResult = CursorUtil.getColumnIndexOrThrow(_cursor, "result");
           final MeasurementRecord _result;
           if (_cursor.moveToFirst()) {
@@ -440,35 +467,47 @@ public final class RecordDao_Impl implements RecordDao {
             _tmpLineName = _cursor.getString(_cursorIndexOfLineName);
             final String _tmpModelName;
             _tmpModelName = _cursor.getString(_cursorIndexOfModelName);
-            final String _tmpDeviceSn;
-            if (_cursor.isNull(_cursorIndexOfDeviceSn)) {
-              _tmpDeviceSn = null;
+            final String _tmpDeviceInfo;
+            if (_cursor.isNull(_cursorIndexOfDeviceInfo)) {
+              _tmpDeviceInfo = null;
             } else {
-              _tmpDeviceSn = _cursor.getString(_cursorIndexOfDeviceSn);
+              _tmpDeviceInfo = _cursor.getString(_cursorIndexOfDeviceInfo);
             }
             final String _tmpDeviceIp;
             _tmpDeviceIp = _cursor.getString(_cursorIndexOfDeviceIp);
-            final Integer _tmpSetTemp;
-            if (_cursor.isNull(_cursorIndexOfSetTemp)) {
-              _tmpSetTemp = null;
+            final Integer _tmpTargetTemp;
+            if (_cursor.isNull(_cursorIndexOfTargetTemp)) {
+              _tmpTargetTemp = null;
             } else {
-              _tmpSetTemp = _cursor.getInt(_cursorIndexOfSetTemp);
+              _tmpTargetTemp = _cursor.getInt(_cursorIndexOfTargetTemp);
             }
-            final Integer _tmpMeasuredTemp;
+            final Integer _tmpTempLow;
+            if (_cursor.isNull(_cursorIndexOfTempLow)) {
+              _tmpTempLow = null;
+            } else {
+              _tmpTempLow = _cursor.getInt(_cursorIndexOfTempLow);
+            }
+            final Integer _tmpTempHigh;
+            if (_cursor.isNull(_cursorIndexOfTempHigh)) {
+              _tmpTempHigh = null;
+            } else {
+              _tmpTempHigh = _cursor.getInt(_cursorIndexOfTempHigh);
+            }
+            final Double _tmpMeasuredTemp;
             if (_cursor.isNull(_cursorIndexOfMeasuredTemp)) {
               _tmpMeasuredTemp = null;
             } else {
-              _tmpMeasuredTemp = _cursor.getInt(_cursorIndexOfMeasuredTemp);
+              _tmpMeasuredTemp = _cursor.getDouble(_cursorIndexOfMeasuredTemp);
             }
-            final Integer _tmpTolerance;
-            if (_cursor.isNull(_cursorIndexOfTolerance)) {
-              _tmpTolerance = null;
+            final Double _tmpLeakageMv;
+            if (_cursor.isNull(_cursorIndexOfLeakageMv)) {
+              _tmpLeakageMv = null;
             } else {
-              _tmpTolerance = _cursor.getInt(_cursorIndexOfTolerance);
+              _tmpLeakageMv = _cursor.getDouble(_cursorIndexOfLeakageMv);
             }
             final String _tmpResult;
             _tmpResult = _cursor.getString(_cursorIndexOfResult);
-            _result = new MeasurementRecord(_tmpId,_tmpSnapshotKey,_tmpTimestampMs,_tmpLineName,_tmpModelName,_tmpDeviceSn,_tmpDeviceIp,_tmpSetTemp,_tmpMeasuredTemp,_tmpTolerance,_tmpResult);
+            _result = new MeasurementRecord(_tmpId,_tmpSnapshotKey,_tmpTimestampMs,_tmpLineName,_tmpModelName,_tmpDeviceInfo,_tmpDeviceIp,_tmpTargetTemp,_tmpTempLow,_tmpTempHigh,_tmpMeasuredTemp,_tmpLeakageMv,_tmpResult);
           } else {
             _result = null;
           }
@@ -504,11 +543,13 @@ public final class RecordDao_Impl implements RecordDao {
           final int _cursorIndexOfTimestampMs = CursorUtil.getColumnIndexOrThrow(_cursor, "timestampMs");
           final int _cursorIndexOfLineName = CursorUtil.getColumnIndexOrThrow(_cursor, "lineName");
           final int _cursorIndexOfModelName = CursorUtil.getColumnIndexOrThrow(_cursor, "modelName");
-          final int _cursorIndexOfDeviceSn = CursorUtil.getColumnIndexOrThrow(_cursor, "deviceSn");
+          final int _cursorIndexOfDeviceInfo = CursorUtil.getColumnIndexOrThrow(_cursor, "deviceInfo");
           final int _cursorIndexOfDeviceIp = CursorUtil.getColumnIndexOrThrow(_cursor, "deviceIp");
-          final int _cursorIndexOfSetTemp = CursorUtil.getColumnIndexOrThrow(_cursor, "setTemp");
+          final int _cursorIndexOfTargetTemp = CursorUtil.getColumnIndexOrThrow(_cursor, "targetTemp");
+          final int _cursorIndexOfTempLow = CursorUtil.getColumnIndexOrThrow(_cursor, "tempLow");
+          final int _cursorIndexOfTempHigh = CursorUtil.getColumnIndexOrThrow(_cursor, "tempHigh");
           final int _cursorIndexOfMeasuredTemp = CursorUtil.getColumnIndexOrThrow(_cursor, "measuredTemp");
-          final int _cursorIndexOfTolerance = CursorUtil.getColumnIndexOrThrow(_cursor, "tolerance");
+          final int _cursorIndexOfLeakageMv = CursorUtil.getColumnIndexOrThrow(_cursor, "leakageMv");
           final int _cursorIndexOfResult = CursorUtil.getColumnIndexOrThrow(_cursor, "result");
           final MeasurementRecord _result;
           if (_cursor.moveToFirst()) {
@@ -522,35 +563,47 @@ public final class RecordDao_Impl implements RecordDao {
             _tmpLineName = _cursor.getString(_cursorIndexOfLineName);
             final String _tmpModelName;
             _tmpModelName = _cursor.getString(_cursorIndexOfModelName);
-            final String _tmpDeviceSn;
-            if (_cursor.isNull(_cursorIndexOfDeviceSn)) {
-              _tmpDeviceSn = null;
+            final String _tmpDeviceInfo;
+            if (_cursor.isNull(_cursorIndexOfDeviceInfo)) {
+              _tmpDeviceInfo = null;
             } else {
-              _tmpDeviceSn = _cursor.getString(_cursorIndexOfDeviceSn);
+              _tmpDeviceInfo = _cursor.getString(_cursorIndexOfDeviceInfo);
             }
             final String _tmpDeviceIp;
             _tmpDeviceIp = _cursor.getString(_cursorIndexOfDeviceIp);
-            final Integer _tmpSetTemp;
-            if (_cursor.isNull(_cursorIndexOfSetTemp)) {
-              _tmpSetTemp = null;
+            final Integer _tmpTargetTemp;
+            if (_cursor.isNull(_cursorIndexOfTargetTemp)) {
+              _tmpTargetTemp = null;
             } else {
-              _tmpSetTemp = _cursor.getInt(_cursorIndexOfSetTemp);
+              _tmpTargetTemp = _cursor.getInt(_cursorIndexOfTargetTemp);
             }
-            final Integer _tmpMeasuredTemp;
+            final Integer _tmpTempLow;
+            if (_cursor.isNull(_cursorIndexOfTempLow)) {
+              _tmpTempLow = null;
+            } else {
+              _tmpTempLow = _cursor.getInt(_cursorIndexOfTempLow);
+            }
+            final Integer _tmpTempHigh;
+            if (_cursor.isNull(_cursorIndexOfTempHigh)) {
+              _tmpTempHigh = null;
+            } else {
+              _tmpTempHigh = _cursor.getInt(_cursorIndexOfTempHigh);
+            }
+            final Double _tmpMeasuredTemp;
             if (_cursor.isNull(_cursorIndexOfMeasuredTemp)) {
               _tmpMeasuredTemp = null;
             } else {
-              _tmpMeasuredTemp = _cursor.getInt(_cursorIndexOfMeasuredTemp);
+              _tmpMeasuredTemp = _cursor.getDouble(_cursorIndexOfMeasuredTemp);
             }
-            final Integer _tmpTolerance;
-            if (_cursor.isNull(_cursorIndexOfTolerance)) {
-              _tmpTolerance = null;
+            final Double _tmpLeakageMv;
+            if (_cursor.isNull(_cursorIndexOfLeakageMv)) {
+              _tmpLeakageMv = null;
             } else {
-              _tmpTolerance = _cursor.getInt(_cursorIndexOfTolerance);
+              _tmpLeakageMv = _cursor.getDouble(_cursorIndexOfLeakageMv);
             }
             final String _tmpResult;
             _tmpResult = _cursor.getString(_cursorIndexOfResult);
-            _result = new MeasurementRecord(_tmpId,_tmpSnapshotKey,_tmpTimestampMs,_tmpLineName,_tmpModelName,_tmpDeviceSn,_tmpDeviceIp,_tmpSetTemp,_tmpMeasuredTemp,_tmpTolerance,_tmpResult);
+            _result = new MeasurementRecord(_tmpId,_tmpSnapshotKey,_tmpTimestampMs,_tmpLineName,_tmpModelName,_tmpDeviceInfo,_tmpDeviceIp,_tmpTargetTemp,_tmpTempLow,_tmpTempHigh,_tmpMeasuredTemp,_tmpLeakageMv,_tmpResult);
           } else {
             _result = null;
           }
