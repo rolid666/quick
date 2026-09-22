@@ -1,6 +1,7 @@
 package com.quick.app.export
 
 import com.quick.app.data.db.MeasurementRecord
+import com.quick.app.net.channelText
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -16,7 +17,7 @@ import java.util.zip.ZipOutputStream
  */
 object XlsxExporter {
 
-    private const val COLUMNS = 12
+    private const val COLUMNS = 17
 
     /** @param headerDates true=时间列输出为日期单元格，false=按文本输出（保持导出所见即所得） */
     fun export(records: List<MeasurementRecord>, file: File, headerDates: Boolean = false) {
@@ -58,14 +59,19 @@ object XlsxExporter {
                 formatTime(r.timestampMs),
                 r.lineName,
                 r.modelName,
-                r.deviceInfo ?: "",                      // 0x0A~0x19 设备显示字符串
+                r.stationName,
+                r.deviceInfo ?: "",                      // 0x0A~0x19 设备信息(扫码)
                 r.deviceIp,
-                r.targetTemp?.toString() ?: "",          // 0x1B
-                r.tempLow?.toString() ?: "",             // 0x1C
-                r.tempHigh?.toString() ?: "",            // 0x1D
-                num(r.measuredTemp),                     // 0x00 测量温度，保留 1 位小数
-                num(r.leakageMv),                        // 0x02 漏地电压 ×0.1 mV
-                r.result                                 // 0x04
+                channelText(r.channel),                  // 0x04 测量通道
+                r.targetTemp?.toString() ?: "",          // 0x1A 设定温度 ℃
+                r.tempLow?.toString() ?: "",             // 0x1B 温度判断下限 ℃
+                r.tempHigh?.toString() ?: "",            // 0x1C 温度判断上限 ℃
+                num(r.voltageLimitMv),                   // 0x1D 电压判断上限 mV
+                num(r.resistanceLimitOhm),               // 0x1E 电阻判断上限 Ω
+                num(r.measuredTemp),                     // 0x20 测试保存温度 ℃
+                num(r.measuredVoltageMv),                // 0x21 测试保存电压 mV
+                num(r.measuredResistanceOhm),            // 0x22 测试保存电阻 Ω
+                r.result                                 // 0x23 判定
             )
             sb.append("<row r=\"$row\">")
             for ((i, v) in cells.withIndex()) sb.append(cellXml(row, i + 1, v))
@@ -101,13 +107,14 @@ object XlsxExporter {
         .replace("\"", "&quot;")
         .replace("\n", "&#10;")
 
-    /** 小数字段统一 1 位（温度 ×0.1 ℃、漏地电压 ×0.1 mV），空值留空 */
+    /** 小数字段统一 1 位（温度 ×0.1 ℃、电压 ×0.1 mV、电阻 ×0.1 Ω），空值留空 */
     private fun num(v: Double?): String =
         if (v == null) "" else String.format(Locale.US, "%.1f", v)
 
     private val HEADERS = listOf(
-        "ID", "时间", "线别", "机种", "设备信息", "设备IP",
-        "目标温度(℃)", "温度下限(℃)", "温度上限(℃)", "测量温度(℃)", "漏地电压(mV)", "结果"
+        "ID", "时间", "线别", "机种", "站别", "设备信息", "设备IP", "测量通道",
+        "设定温度(℃)", "温度下限(℃)", "温度上限(℃)", "电压上限(mV)", "电阻上限(Ω)",
+        "测量温度(℃)", "保存电压(mV)", "保存电阻(Ω)", "结果"
     )
 
     // ---------- 固定部件 ----------

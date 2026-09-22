@@ -8,7 +8,7 @@
         android:minSdkVersion="26"
         android:targetSdkVersion="35" />
 
-    <!-- 网络：Modbus TCP 连接 191AF+ -->
+    <!-- 网络：Modbus TCP 连接 192AF+ 测温仪 -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
@@ -18,6 +18,25 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!--
+      扭力计走 USB 串口（FTDI 芯片），需要 USB Host 能力。
+      required="false"：没有 USB Host 的机器照样能装、能跑烙铁那半边 ——
+      扭力计页面会明确提示「本机不支持 USB Host」，而不是整个应用装不上。
+    -->
+    <uses-feature
+        android:name="android.hardware.usb.host"
+        android:required="false" />
+
+    <!-- 设备信息扫码（后置摄像头）。同样 required="false"：无摄像头的平板可以手输。 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false" />
 
     <permission
         android:name="com.quick.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
@@ -44,7 +63,7 @@
             </intent-filter>
         </activity>
 
-        <!-- 数据采集前台服务：承载轮询，防止后台被杀 -->
+        <!-- 数据采集前台服务：承载烙铁轮询，防止后台被杀 -->
         <service
             android:name="com.quick.app.collect.CollectionService"
             android:exported="false"
@@ -60,6 +79,15 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <service
+            android:name="androidx.camera.core.impl.MetadataHolderService"
+            android:enabled="false"
+            android:exported="false" >
+            <meta-data
+                android:name="androidx.camera.core.impl.MetadataHolderService.DEFAULT_CONFIG_PROVIDER"
+                android:value="androidx.camera.camera2.Camera2Config$DefaultProvider" />
+        </service>
 
         <activity
             android:name="androidx.compose.ui.tooling.PreviewActivity"

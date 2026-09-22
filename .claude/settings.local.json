@@ -6,7 +6,16 @@
       "Read(//c/Users/rolid/Desktop/Quick192AF-App/build-tools/**)",
       "Bash(./gradlew.bat assembleDebug --no-daemon)",
       "Bash(./gradlew.bat assembleDebug testDebugUnitTest --no-daemon)",
-      "Bash(./gradlew.bat assembleDebug testDebugUnitTest --no-daemon -q)"
+      "Bash(./gradlew.bat assembleDebug testDebugUnitTest --no-daemon -q)",
+      "Bash(./gradlew.bat testDebugUnitTest --no-daemon)",
+      "Bash(python -c ' *)",
+      "Bash(./gradlew.bat compileDebugKotlin --no-daemon)",
+      "Bash(./gradlew.bat :app:dependencies --configuration debugRuntimeClasspath)",
+      "Bash(curl -s --max-time 25 \"https://maven.aliyun.com/repository/central/com/github/mik3y/usb-serial-for-android/maven-metadata.xml\")",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}  size=%{size_download}  time=%{time_total}s\\\\n\" --max-time 60 -L \"https://jitpack.io/com/github/mik3y/usb-serial-for-android/3.8.1/usb-serial-for-android-3.8.1.aar\")",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" --max-time 30 \"https://maven.aliyun.com/repository/jitpack/com/github/mik3y/usb-serial-for-android/3.8.1/usb-serial-for-android-3.8.1.pom\")",
+      "Bash(./gradlew.bat compileDebugKotlin --console=plain)",
+      "Bash(./gradlew.bat testDebugUnitTest --console=plain)"
     ]
   }
 }

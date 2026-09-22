@@ -8,7 +8,7 @@
 8        android:minSdkVersion="26"
 9        android:targetSdkVersion="35" />
 10
-11    <!-- 网络：Modbus TCP 连接 191AF+ -->
+11    <!-- 网络：Modbus TCP 连接 192AF+ 测温仪 -->
 12    <uses-permission android:name="android.permission.INTERNET" />
 12-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:5:5-67
 12-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:5:22-64
@@ -35,160 +35,206 @@
 20-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:13:5-66
 20-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:13:22-63
 21
-22    <permission
-22-->[androidx.core:core:1.13.1] C:\Users\rolid\.gradle\caches\8.9\transforms\af19c7e1dff59c494b00b46e212ebbae\transformed\core-1.13.1\AndroidManifest.xml:22:5-24:47
-23        android:name="com.quick.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-23-->[androidx.core:core:1.13.1] C:\Users\rolid\.gradle\caches\8.9\transforms\af19c7e1dff59c494b00b46e212ebbae\transformed\core-1.13.1\AndroidManifest.xml:23:9-81
-24        android:protectionLevel="signature" />
-24-->[androidx.core:core:1.13.1] C:\Users\rolid\.gradle\caches\8.9\transforms\af19c7e1dff59c494b00b46e212ebbae\transformed\core-1.13.1\AndroidManifest.xml:24:9-44
-25
-26    <uses-permission android:name="com.quick.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
-26-->[androidx.core:core:1.13.1] C:\Users\rolid\.gradle\caches\8.9\transforms\af19c7e1dff59c494b00b46e212ebbae\transformed\core-1.13.1\AndroidManifest.xml:26:5-97
-26-->[androidx.core:core:1.13.1] C:\Users\rolid\.gradle\caches\8.9\transforms\af19c7e1dff59c494b00b46e212ebbae\transformed\core-1.13.1\AndroidManifest.xml:26:22-94
-27
-28    <application
-28-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:15:5-47:19
-29        android:name="com.quick.app.QuickApp"
-29-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:16:9-33
-30        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
-30-->[androidx.core:core:1.13.1] C:\Users\rolid\.gradle\caches\8.9\transforms\af19c7e1dff59c494b00b46e212ebbae\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
-31        android:debuggable="true"
-32        android:extractNativeLibs="false"
-33        android:label="@string/app_name"
-33-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:17:9-41
-34        android:supportsRtl="true"
-34-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:18:9-35
-35        android:theme="@android:style/Theme.Material.Light.NoActionBar" >
-35-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:19:9-72
-36        <activity
-36-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:21:9-29:20
-37            android:name="com.quick.app.MainActivity"
-37-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:22:13-41
-38            android:exported="true"
-38-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:23:13-36
-39            android:launchMode="singleTask" >
-39-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:24:13-44
-40            <intent-filter>
-40-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:25:13-28:29
-41                <action android:name="android.intent.action.MAIN" />
-41-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:26:17-69
-41-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:26:25-66
-42
-43                <category android:name="android.intent.category.LAUNCHER" />
-43-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:27:17-77
-43-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:27:27-74
-44            </intent-filter>
-45        </activity>
+22    <!--
+23      扭力计走 USB 串口（FTDI 芯片），需要 USB Host 能力。
+24      required="false"：没有 USB Host 的机器照样能装、能跑烙铁那半边 ——
+25      扭力计页面会明确提示「本机不支持 USB Host」，而不是整个应用装不上。
+26    -->
+27    <uses-feature
+27-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:20:5-87
+28        android:name="android.hardware.usb.host"
+28-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:20:19-59
+29        android:required="false" />
+29-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:20:60-84
+30
+31    <!-- 设备信息扫码（后置摄像头）。同样 required="false"：无摄像头的平板可以手输。 -->
+32    <uses-permission android:name="android.permission.CAMERA" />
+32-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:23:5-65
+32-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:23:22-62
+33
+34    <uses-feature
+34-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:24:5-85
+35        android:name="android.hardware.camera"
+35-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:24:19-57
+36        android:required="false" />
+36-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:24:58-82
+37    <uses-feature
+37-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:25:5-95
+38        android:name="android.hardware.camera.autofocus"
+38-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:25:19-67
+39        android:required="false" />
+39-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:25:68-92
+40
+41    <permission
+41-->[androidx.core:core:1.13.1] C:\Users\rolid\.gradle\caches\8.9\transforms\af19c7e1dff59c494b00b46e212ebbae\transformed\core-1.13.1\AndroidManifest.xml:22:5-24:47
+42        android:name="com.quick.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+42-->[androidx.core:core:1.13.1] C:\Users\rolid\.gradle\caches\8.9\transforms\af19c7e1dff59c494b00b46e212ebbae\transformed\core-1.13.1\AndroidManifest.xml:23:9-81
+43        android:protectionLevel="signature" />
+43-->[androidx.core:core:1.13.1] C:\Users\rolid\.gradle\caches\8.9\transforms\af19c7e1dff59c494b00b46e212ebbae\transformed\core-1.13.1\AndroidManifest.xml:24:9-44
+44
+45    <uses-permission android:name="com.quick.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+45-->[androidx.core:core:1.13.1] C:\Users\rolid\.gradle\caches\8.9\transforms\af19c7e1dff59c494b00b46e212ebbae\transformed\core-1.13.1\AndroidManifest.xml:26:5-97
+45-->[androidx.core:core:1.13.1] C:\Users\rolid\.gradle\caches\8.9\transforms\af19c7e1dff59c494b00b46e212ebbae\transformed\core-1.13.1\AndroidManifest.xml:26:22-94
 46
-47        <!-- 数据采集前台服务：承载轮询，防止后台被杀 -->
-48        <service
-48-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:32:9-35:56
-49            android:name="com.quick.app.collect.CollectionService"
-49-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:33:13-54
-50            android:exported="false"
-50-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:34:13-37
-51            android:foregroundServiceType="dataSync" />
-51-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:35:13-53
-52
-53        <!-- Excel / 配置导出分享 -->
-54        <provider
-55            android:name="androidx.core.content.FileProvider"
-55-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:39:13-62
-56            android:authorities="com.quick.app.fileprovider"
-56-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:40:13-64
-57            android:exported="false"
-57-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:41:13-37
-58            android:grantUriPermissions="true" >
-58-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:42:13-47
-59            <meta-data
-59-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:43:13-45:54
-60                android:name="android.support.FILE_PROVIDER_PATHS"
-60-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:44:17-67
-61                android:resource="@xml/file_paths" />
-61-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:45:17-51
-62        </provider>
-63
-64        <activity
-64-->[androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\rolid\.gradle\caches\8.9\transforms\d442f0cec6e88ec6c1fadf17cfbbcf1d\transformed\ui-tooling-release\AndroidManifest.xml:23:9-25:39
-65            android:name="androidx.compose.ui.tooling.PreviewActivity"
-65-->[androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\rolid\.gradle\caches\8.9\transforms\d442f0cec6e88ec6c1fadf17cfbbcf1d\transformed\ui-tooling-release\AndroidManifest.xml:24:13-71
-66            android:exported="true" />
-66-->[androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\rolid\.gradle\caches\8.9\transforms\d442f0cec6e88ec6c1fadf17cfbbcf1d\transformed\ui-tooling-release\AndroidManifest.xml:25:13-36
-67
-68        <provider
-68-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rolid\.gradle\caches\8.9\transforms\be67dd832882137851d4bac6e98b61a5\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
-69            android:name="androidx.startup.InitializationProvider"
-69-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rolid\.gradle\caches\8.9\transforms\be67dd832882137851d4bac6e98b61a5\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
-70            android:authorities="com.quick.app.androidx-startup"
-70-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rolid\.gradle\caches\8.9\transforms\be67dd832882137851d4bac6e98b61a5\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
-71            android:exported="false" >
-71-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rolid\.gradle\caches\8.9\transforms\be67dd832882137851d4bac6e98b61a5\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
-72            <meta-data
-72-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rolid\.gradle\caches\8.9\transforms\be67dd832882137851d4bac6e98b61a5\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
-73                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-73-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rolid\.gradle\caches\8.9\transforms\be67dd832882137851d4bac6e98b61a5\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
-74                android:value="androidx.startup" />
-74-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rolid\.gradle\caches\8.9\transforms\be67dd832882137851d4bac6e98b61a5\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
-75            <meta-data
-75-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\3cb277b44e02ffc06265797d094f7a8b\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:29:13-31:52
-76                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
-76-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\3cb277b44e02ffc06265797d094f7a8b\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:30:17-78
-77                android:value="androidx.startup" />
-77-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\3cb277b44e02ffc06265797d094f7a8b\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:31:17-49
+47    <application
+47-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:27:5-59:19
+48        android:name="com.quick.app.QuickApp"
+48-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:28:9-33
+49        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+49-->[androidx.core:core:1.13.1] C:\Users\rolid\.gradle\caches\8.9\transforms\af19c7e1dff59c494b00b46e212ebbae\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
+50        android:debuggable="true"
+51        android:extractNativeLibs="false"
+52        android:label="@string/app_name"
+52-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:29:9-41
+53        android:supportsRtl="true"
+53-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:30:9-35
+54        android:theme="@android:style/Theme.Material.Light.NoActionBar" >
+54-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:31:9-72
+55        <activity
+55-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:33:9-41:20
+56            android:name="com.quick.app.MainActivity"
+56-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:34:13-41
+57            android:exported="true"
+57-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:35:13-36
+58            android:launchMode="singleTask" >
+58-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:36:13-44
+59            <intent-filter>
+59-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:37:13-40:29
+60                <action android:name="android.intent.action.MAIN" />
+60-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:38:17-69
+60-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:38:25-66
+61
+62                <category android:name="android.intent.category.LAUNCHER" />
+62-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:39:17-77
+62-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:39:27-74
+63            </intent-filter>
+64        </activity>
+65
+66        <!-- 数据采集前台服务：承载烙铁轮询，防止后台被杀 -->
+67        <service
+67-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:44:9-47:56
+68            android:name="com.quick.app.collect.CollectionService"
+68-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:45:13-54
+69            android:exported="false"
+69-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:46:13-37
+70            android:foregroundServiceType="dataSync" />
+70-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:47:13-53
+71
+72        <!-- Excel / 配置导出分享 -->
+73        <provider
+74            android:name="androidx.core.content.FileProvider"
+74-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:51:13-62
+75            android:authorities="com.quick.app.fileprovider"
+75-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:52:13-64
+76            android:exported="false"
+76-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:53:13-37
+77            android:grantUriPermissions="true" >
+77-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:54:13-47
 78            <meta-data
-78-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
-79                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-79-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
-80                android:value="androidx.startup" />
-80-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
+78-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:55:13-57:54
+79                android:name="android.support.FILE_PROVIDER_PATHS"
+79-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:56:17-67
+80                android:resource="@xml/file_paths" />
+80-->D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:57:17-51
 81        </provider>
 82
 83        <service
-83-->[androidx.room:room-runtime:2.6.1] C:\Users\rolid\.gradle\caches\8.9\transforms\6a8d99c9c4f1e9c3dea20ea6e378d2fd\transformed\room-runtime-2.6.1\AndroidManifest.xml:24:9-28:63
-84            android:name="androidx.room.MultiInstanceInvalidationService"
-84-->[androidx.room:room-runtime:2.6.1] C:\Users\rolid\.gradle\caches\8.9\transforms\6a8d99c9c4f1e9c3dea20ea6e378d2fd\transformed\room-runtime-2.6.1\AndroidManifest.xml:25:13-74
-85            android:directBootAware="true"
-85-->[androidx.room:room-runtime:2.6.1] C:\Users\rolid\.gradle\caches\8.9\transforms\6a8d99c9c4f1e9c3dea20ea6e378d2fd\transformed\room-runtime-2.6.1\AndroidManifest.xml:26:13-43
-86            android:exported="false" />
-86-->[androidx.room:room-runtime:2.6.1] C:\Users\rolid\.gradle\caches\8.9\transforms\6a8d99c9c4f1e9c3dea20ea6e378d2fd\transformed\room-runtime-2.6.1\AndroidManifest.xml:27:13-37
-87
-88        <receiver
-88-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
-89            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-89-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
-90            android:directBootAware="false"
-90-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
-91            android:enabled="true"
-91-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
-92            android:exported="true"
-92-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
-93            android:permission="android.permission.DUMP" >
-93-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
-94            <intent-filter>
-94-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
-95                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-95-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
-95-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
-96            </intent-filter>
-97            <intent-filter>
-97-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
-98                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-98-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
-98-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
-99            </intent-filter>
-100            <intent-filter>
-100-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
-101                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-101-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
-101-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
-102            </intent-filter>
-103            <intent-filter>
-103-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
-104                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-104-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
-104-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
-105            </intent-filter>
-106        </receiver>
-107    </application>
-108
-109</manifest>
+83-->[androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:24:9-33:19
+84            android:name="androidx.camera.core.impl.MetadataHolderService"
+84-->[androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:25:13-75
+85            android:enabled="false"
+85-->[androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:26:13-36
+86            android:exported="false" >
+86-->[androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:27:13-37
+87            <meta-data
+87-->[androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:30:13-32:89
+88                android:name="androidx.camera.core.impl.MetadataHolderService.DEFAULT_CONFIG_PROVIDER"
+88-->[androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:31:17-103
+89                android:value="androidx.camera.camera2.Camera2Config$DefaultProvider" />
+89-->[androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:32:17-86
+90        </service>
+91
+92        <activity
+92-->[androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\rolid\.gradle\caches\8.9\transforms\d442f0cec6e88ec6c1fadf17cfbbcf1d\transformed\ui-tooling-release\AndroidManifest.xml:23:9-25:39
+93            android:name="androidx.compose.ui.tooling.PreviewActivity"
+93-->[androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\rolid\.gradle\caches\8.9\transforms\d442f0cec6e88ec6c1fadf17cfbbcf1d\transformed\ui-tooling-release\AndroidManifest.xml:24:13-71
+94            android:exported="true" />
+94-->[androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\rolid\.gradle\caches\8.9\transforms\d442f0cec6e88ec6c1fadf17cfbbcf1d\transformed\ui-tooling-release\AndroidManifest.xml:25:13-36
+95
+96        <provider
+96-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rolid\.gradle\caches\8.9\transforms\be67dd832882137851d4bac6e98b61a5\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
+97            android:name="androidx.startup.InitializationProvider"
+97-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rolid\.gradle\caches\8.9\transforms\be67dd832882137851d4bac6e98b61a5\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
+98            android:authorities="com.quick.app.androidx-startup"
+98-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rolid\.gradle\caches\8.9\transforms\be67dd832882137851d4bac6e98b61a5\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
+99            android:exported="false" >
+99-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rolid\.gradle\caches\8.9\transforms\be67dd832882137851d4bac6e98b61a5\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
+100            <meta-data
+100-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rolid\.gradle\caches\8.9\transforms\be67dd832882137851d4bac6e98b61a5\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+101                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+101-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rolid\.gradle\caches\8.9\transforms\be67dd832882137851d4bac6e98b61a5\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
+102                android:value="androidx.startup" />
+102-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rolid\.gradle\caches\8.9\transforms\be67dd832882137851d4bac6e98b61a5\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
+103            <meta-data
+103-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\3cb277b44e02ffc06265797d094f7a8b\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:29:13-31:52
+104                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+104-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\3cb277b44e02ffc06265797d094f7a8b\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:30:17-78
+105                android:value="androidx.startup" />
+105-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\3cb277b44e02ffc06265797d094f7a8b\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:31:17-49
+106            <meta-data
+106-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
+107                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+107-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
+108                android:value="androidx.startup" />
+108-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
+109        </provider>
+110
+111        <service
+111-->[androidx.room:room-runtime:2.6.1] C:\Users\rolid\.gradle\caches\8.9\transforms\6a8d99c9c4f1e9c3dea20ea6e378d2fd\transformed\room-runtime-2.6.1\AndroidManifest.xml:24:9-28:63
+112            android:name="androidx.room.MultiInstanceInvalidationService"
+112-->[androidx.room:room-runtime:2.6.1] C:\Users\rolid\.gradle\caches\8.9\transforms\6a8d99c9c4f1e9c3dea20ea6e378d2fd\transformed\room-runtime-2.6.1\AndroidManifest.xml:25:13-74
+113            android:directBootAware="true"
+113-->[androidx.room:room-runtime:2.6.1] C:\Users\rolid\.gradle\caches\8.9\transforms\6a8d99c9c4f1e9c3dea20ea6e378d2fd\transformed\room-runtime-2.6.1\AndroidManifest.xml:26:13-43
+114            android:exported="false" />
+114-->[androidx.room:room-runtime:2.6.1] C:\Users\rolid\.gradle\caches\8.9\transforms\6a8d99c9c4f1e9c3dea20ea6e378d2fd\transformed\room-runtime-2.6.1\AndroidManifest.xml:27:13-37
+115
+116        <receiver
+116-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
+117            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+117-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
+118            android:directBootAware="false"
+118-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
+119            android:enabled="true"
+119-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
+120            android:exported="true"
+120-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
+121            android:permission="android.permission.DUMP" >
+121-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
+122            <intent-filter>
+122-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
+123                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+123-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
+123-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
+124            </intent-filter>
+125            <intent-filter>
+125-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
+126                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+126-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
+126-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
+127            </intent-filter>
+128            <intent-filter>
+128-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
+129                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+129-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
+129-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
+130            </intent-filter>
+131            <intent-filter>
+131-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
+132                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+132-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
+132-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
+133            </intent-filter>
+134        </receiver>
+135    </application>
+136
+137</manifest>

@@ -1,20 +1,27 @@
 -- Merging decision tree log ---
 provider#androidx.core.content.FileProvider
-INJECTED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:38:9-46:20
+INJECTED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:50:9-58:20
 	android:grantUriPermissions
-		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:42:13-47
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:54:13-47
 	android:authorities
 		INJECTED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml
-		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:40:13-64
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:52:13-64
 	android:exported
-		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:41:13-37
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:53:13-37
 	android:name
-		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:39:13-62
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:51:13-62
 manifest
-ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:2:1-49:12
-INJECTED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:2:1-49:12
-INJECTED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:2:1-49:12
-INJECTED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:2:1-49:12
+ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:2:1-61:12
+INJECTED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:2:1-61:12
+INJECTED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:2:1-61:12
+INJECTED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:2:1-61:12
+MERGED from [androidx.camera:camera-video:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\4a6b38b791f77eabb599c34f8183a4e1\transformed\camera-video-1.4.0\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.camera:camera-view:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\bb611b8394903fe8e18cd2e67c2b12ce\transformed\camera-view-1.4.0\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.camera:camera-lifecycle:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\f2ab3224317390c71c0a4003a9f9bcbe\transformed\camera-lifecycle-1.4.0\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:17:1-36:12
+MERGED from [androidx.camera:camera-core:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\aaa50feee6d8d9961db2930291e40f40\transformed\camera-core-1.4.0\AndroidManifest.xml:17:1-36:12
+MERGED from [androidx.appcompat:appcompat:1.1.0] C:\Users\rolid\.gradle\caches\8.9\transforms\1150cd14dcd1571c6ea02bfabb22597c\transformed\appcompat-1.1.0\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.fragment:fragment:1.1.0] C:\Users\rolid\.gradle\caches\8.9\transforms\e2755cd803d9283c17f0ef7d65433d4d\transformed\fragment-1.1.0\AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.activity:activity:1.9.3] C:\Users\rolid\.gradle\caches\8.9\transforms\653d97b9f1f5e026ff383427932ff241\transformed\activity-1.9.3\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.activity:activity-ktx:1.9.3] C:\Users\rolid\.gradle\caches\8.9\transforms\513384880b753916fdcafe1f9de1c752\transformed\activity-ktx-1.9.3\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.compose.material3:material3-android:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\d96e8864181ff29583df1391b0ce80d0\transformed\material3-release\AndroidManifest.xml:17:1-22:12
@@ -35,20 +42,30 @@ MERGED from [androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\rolid\.gradl
 MERGED from [androidx.activity:activity-compose:1.9.3] C:\Users\rolid\.gradle\caches\8.9\transforms\4bfa42327adeb76b40f4b285c3b18413\transformed\activity-compose-1.9.3\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.savedstate:savedstate-ktx:1.2.1] C:\Users\rolid\.gradle\caches\8.9\transforms\28b426be20963918bcfae54253424e55\transformed\savedstate-ktx-1.2.1\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.savedstate:savedstate:1.2.1] C:\Users\rolid\.gradle\caches\8.9\transforms\9ea7d73ec8113be4ec41ec8889d6db9b\transformed\savedstate-1.2.1\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.loader:loader:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\4e8912e81df2316e945599c4b24b677f\transformed\loader-1.0.0\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.emoji2:emoji2:1.3.0] C:\Users\rolid\.gradle\caches\8.9\transforms\be67dd832882137851d4bac6e98b61a5\transformed\emoji2-1.3.0\AndroidManifest.xml:17:1-35:12
 MERGED from [androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\3cb277b44e02ffc06265797d094f7a8b\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:17:1-35:12
-MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\51c445163eb60914c20f22c5fdb8ed69\transformed\lifecycle-livedata-core-2.8.7\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-viewmodel:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\5c163a4014fcf2122375062498da7e30\transformed\lifecycle-viewmodel-2.8.7\AndroidManifest.xml:2:1-5:12
 MERGED from [androidx.lifecycle:lifecycle-viewmodel-android:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\956a590224ae138080ae2e1b610ccb5c\transformed\lifecycle-viewmodel-release\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-livedata-core-ktx:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\42b0c545cddb29342219f5c54f129db7\transformed\lifecycle-livedata-core-ktx-2.8.7\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\51c445163eb60914c20f22c5fdb8ed69\transformed\lifecycle-livedata-core-2.8.7\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.lifecycle:lifecycle-runtime-android:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\5ebcb578025b951a4e29ae1e8385f42b\transformed\lifecycle-runtime-release\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\1a670d7f38af3be0dc5d55f807eec69f\transformed\lifecycle-viewmodel-savedstate-2.8.7\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\9ee3560f1a99ef35bab770f1fa93a91e\transformed\lifecycle-viewmodel-ktx-2.8.7\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.lifecycle:lifecycle-livedata:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\1978b40031a1d8c6e856b2bfe40d3172\transformed\lifecycle-livedata-2.8.7\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.lifecycle:lifecycle-runtime-compose-android:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\d0502c1de04ead2b611e68f4b9f8f7aa\transformed\lifecycle-runtime-compose-release\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.lifecycle:lifecycle-runtime-ktx-android:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\b4092a698a1f5de13353cb84fcd287c8\transformed\lifecycle-runtime-ktx-release\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.lifecycle:lifecycle-viewmodel-compose-android:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\3716d42c5228773871ede3ec637fb1a8\transformed\lifecycle-viewmodel-compose-release\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.compose.material:material-icons-extended-android:1.7.5] C:\Users\rolid\.gradle\caches\8.9\transforms\0a925983fb68f52e78c26913aa07fc66\transformed\material-icons-extended-release\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.compose.material:material-icons-core-android:1.7.5] C:\Users\rolid\.gradle\caches\8.9\transforms\f4317c5827fe01a25f72761d7a0c7f29\transformed\material-icons-core-release\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.compose.ui:ui-android:1.7.5] C:\Users\rolid\.gradle\caches\8.9\transforms\78d9f79b343701a4fd5013df0fd23ef7\transformed\ui-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.appcompat:appcompat-resources:1.1.0] C:\Users\rolid\.gradle\caches\8.9\transforms\1105612ddb3d8b363064329a407f0694\transformed\appcompat-resources-1.1.0\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.drawerlayout:drawerlayout:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\7a2b68ab04b0b0a16ed6e83756944544\transformed\drawerlayout-1.0.0\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.autofill:autofill:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\5e2795e3473bb2518d4e411b4d29e5c7\transformed\autofill-1.0.0\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.viewpager:viewpager:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\5808dae57f6070f6e4c942f1438645a4\transformed\viewpager-1.0.0\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] C:\Users\rolid\.gradle\caches\8.9\transforms\dd91670b82e83c0152fad53346b33e8c\transformed\vectordrawable-animated-1.1.0\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.vectordrawable:vectordrawable:1.1.0] C:\Users\rolid\.gradle\caches\8.9\transforms\1cfd699c179bc45737338e05d964f082\transformed\vectordrawable-1.1.0\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.customview:customview:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\658dab6b200850147ea94c4e3c0559de\transformed\customview-1.0.0\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.graphics:graphics-path:1.0.1] C:\Users\rolid\.gradle\caches\8.9\transforms\8f5e3cbde1aeaab7a26c65b8ac664e54\transformed\graphics-path-1.0.1\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.core:core:1.13.1] C:\Users\rolid\.gradle\caches\8.9\transforms\af19c7e1dff59c494b00b46e212ebbae\transformed\core-1.13.1\AndroidManifest.xml:17:1-30:12
 MERGED from [androidx.customview:customview-poolingcontainer:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\196b05f13d40afe6ec8b2550d16223f7\transformed\customview-poolingcontainer-1.0.0\AndroidManifest.xml:17:1-23:12
@@ -60,12 +77,15 @@ MERGED from [androidx.sqlite:sqlite:2.4.0] C:\Users\rolid\.gradle\caches\8.9\tra
 MERGED from [androidx.compose.runtime:runtime-saveable-android:1.7.5] C:\Users\rolid\.gradle\caches\8.9\transforms\ece26790c6331be74ec78ebab12668e0\transformed\runtime-saveable-release\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.compose.runtime:runtime-android:1.7.5] C:\Users\rolid\.gradle\caches\8.9\transforms\558095f29ca76c8a339bafb593b180ab\transformed\runtime-release\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.annotation:annotation-experimental:1.4.1] C:\Users\rolid\.gradle\caches\8.9\transforms\34dabe41d25b5c4438b1c6669b7ed45a\transformed\annotation-experimental-1.4.1\AndroidManifest.xml:2:1-7:12
-MERGED from [androidx.arch.core:core-runtime:2.2.0] C:\Users\rolid\.gradle\caches\8.9\transforms\dcc2bec987150e36a464c95ec9c971dc\transformed\core-runtime-2.2.0\AndroidManifest.xml:17:1-22:12
-MERGED from [androidx.interpolator:interpolator:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\f378aa6983f9dd82feffb0e143435cbd\transformed\interpolator-1.0.0\AndroidManifest.xml:17:1-22:12
-MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\rolid\.gradle\caches\8.9\transforms\1771e349d9ff85dee6fdf57c00a0d628\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:17:1-27:12
 MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:17:1-55:12
 MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\rolid\.gradle\caches\8.9\transforms\1f9902d6379a51311da8f1455625ea50\transformed\startup-runtime-1.1.1\AndroidManifest.xml:17:1-33:12
-MERGED from [androidx.tracing:tracing:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\cf4a6c84db0e20aa4b06f14ca6cfc926\transformed\tracing-1.0.0\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.tracing:tracing:1.2.0] C:\Users\rolid\.gradle\caches\8.9\transforms\fbcfdf435c546b61f53203e26d6170a9\transformed\tracing-1.2.0\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.tracing:tracing-ktx:1.2.0] C:\Users\rolid\.gradle\caches\8.9\transforms\cd1b529a4879f635cb6b1c987f19e123\transformed\tracing-ktx-1.2.0\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.arch.core:core-runtime:2.2.0] C:\Users\rolid\.gradle\caches\8.9\transforms\dcc2bec987150e36a464c95ec9c971dc\transformed\core-runtime-2.2.0\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.exifinterface:exifinterface:1.3.2] C:\Users\rolid\.gradle\caches\8.9\transforms\9cd6b7339e65dc1e51d220cf3036fa7d\transformed\exifinterface-1.3.2\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.interpolator:interpolator:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\f378aa6983f9dd82feffb0e143435cbd\transformed\interpolator-1.0.0\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\rolid\.gradle\caches\8.9\transforms\1771e349d9ff85dee6fdf57c00a0d628\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:17:1-27:12
+MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\71ffbbfd4b330287a53efa562dcb4702\transformed\cursoradapter-1.0.0\AndroidManifest.xml:17:1-22:12
 	package
 		INJECTED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml
 	android:versionName
@@ -106,9 +126,35 @@ uses-permission#android.permission.VIBRATE
 ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:13:5-66
 	android:name
 		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:13:22-63
+uses-feature#android.hardware.usb.host
+ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:20:5-87
+	android:required
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:20:60-84
+	android:name
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:20:19-59
+uses-permission#android.permission.CAMERA
+ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:23:5-65
+	android:name
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:23:22-62
+uses-feature#android.hardware.camera
+ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:24:5-85
+	android:required
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:24:58-82
+	android:name
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:24:19-57
+uses-feature#android.hardware.camera.autofocus
+ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:25:5-95
+	android:required
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:25:68-92
+	android:name
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:25:19-67
 application
-ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:15:5-47:19
-INJECTED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:15:5-47:19
+ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:27:5-59:19
+INJECTED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:27:5-59:19
+MERGED from [androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:23:5-34:19
+MERGED from [androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:23:5-34:19
+MERGED from [androidx.camera:camera-core:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\aaa50feee6d8d9961db2930291e40f40\transformed\camera-core-1.4.0\AndroidManifest.xml:23:5-34:19
+MERGED from [androidx.camera:camera-core:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\aaa50feee6d8d9961db2930291e40f40\transformed\camera-core-1.4.0\AndroidManifest.xml:23:5-34:19
 MERGED from [androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\rolid\.gradle\caches\8.9\transforms\d442f0cec6e88ec6c1fadf17cfbbcf1d\transformed\ui-tooling-release\AndroidManifest.xml:22:5-26:19
 MERGED from [androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\rolid\.gradle\caches\8.9\transforms\d442f0cec6e88ec6c1fadf17cfbbcf1d\transformed\ui-tooling-release\AndroidManifest.xml:22:5-26:19
 MERGED from [androidx.emoji2:emoji2:1.3.0] C:\Users\rolid\.gradle\caches\8.9\transforms\be67dd832882137851d4bac6e98b61a5\transformed\emoji2-1.3.0\AndroidManifest.xml:23:5-33:19
@@ -119,60 +165,74 @@ MERGED from [androidx.core:core:1.13.1] C:\Users\rolid\.gradle\caches\8.9\transf
 MERGED from [androidx.core:core:1.13.1] C:\Users\rolid\.gradle\caches\8.9\transforms\af19c7e1dff59c494b00b46e212ebbae\transformed\core-1.13.1\AndroidManifest.xml:28:5-89
 MERGED from [androidx.room:room-runtime:2.6.1] C:\Users\rolid\.gradle\caches\8.9\transforms\6a8d99c9c4f1e9c3dea20ea6e378d2fd\transformed\room-runtime-2.6.1\AndroidManifest.xml:23:5-29:19
 MERGED from [androidx.room:room-runtime:2.6.1] C:\Users\rolid\.gradle\caches\8.9\transforms\6a8d99c9c4f1e9c3dea20ea6e378d2fd\transformed\room-runtime-2.6.1\AndroidManifest.xml:23:5-29:19
-MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\rolid\.gradle\caches\8.9\transforms\1771e349d9ff85dee6fdf57c00a0d628\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:24:5-25:19
-MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\rolid\.gradle\caches\8.9\transforms\1771e349d9ff85dee6fdf57c00a0d628\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:24:5-25:19
 MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:23:5-53:19
 MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:23:5-53:19
 MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\rolid\.gradle\caches\8.9\transforms\1f9902d6379a51311da8f1455625ea50\transformed\startup-runtime-1.1.1\AndroidManifest.xml:25:5-31:19
 MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\rolid\.gradle\caches\8.9\transforms\1f9902d6379a51311da8f1455625ea50\transformed\startup-runtime-1.1.1\AndroidManifest.xml:25:5-31:19
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\rolid\.gradle\caches\8.9\transforms\1771e349d9ff85dee6fdf57c00a0d628\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:24:5-25:19
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\rolid\.gradle\caches\8.9\transforms\1771e349d9ff85dee6fdf57c00a0d628\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:24:5-25:19
 	android:extractNativeLibs
 		INJECTED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml
 	android:appComponentFactory
 		ADDED from [androidx.core:core:1.13.1] C:\Users\rolid\.gradle\caches\8.9\transforms\af19c7e1dff59c494b00b46e212ebbae\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
 	android:supportsRtl
-		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:18:9-35
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:30:9-35
 	android:label
-		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:17:9-41
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:29:9-41
 	android:theme
-		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:19:9-72
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:31:9-72
 	android:name
-		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:16:9-33
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:28:9-33
 activity#com.quick.app.MainActivity
-ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:21:9-29:20
+ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:33:9-41:20
 	android:launchMode
-		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:24:13-44
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:36:13-44
 	android:exported
-		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:23:13-36
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:35:13-36
 	android:name
-		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:22:13-41
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:34:13-41
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
-ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:25:13-28:29
+ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:37:13-40:29
 action#android.intent.action.MAIN
-ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:26:17-69
+ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:38:17-69
 	android:name
-		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:26:25-66
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:38:25-66
 category#android.intent.category.LAUNCHER
-ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:27:17-77
+ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:39:17-77
 	android:name
-		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:27:27-74
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:39:27-74
 service#com.quick.app.collect.CollectionService
-ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:32:9-35:56
+ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:44:9-47:56
 	android:exported
-		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:34:13-37
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:46:13-37
 	android:foregroundServiceType
-		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:35:13-53
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:47:13-53
 	android:name
-		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:33:13-54
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:45:13-54
 meta-data#android.support.FILE_PROVIDER_PATHS
-ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:43:13-45:54
+ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:55:13-57:54
 	android:resource
-		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:45:17-51
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:57:17-51
 	android:name
-		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:44:17-67
+		ADDED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml:56:17-67
 uses-sdk
 INJECTED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml
 INJECTED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml
+MERGED from [androidx.camera:camera-video:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\4a6b38b791f77eabb599c34f8183a4e1\transformed\camera-video-1.4.0\AndroidManifest.xml:5:5-44
+MERGED from [androidx.camera:camera-video:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\4a6b38b791f77eabb599c34f8183a4e1\transformed\camera-video-1.4.0\AndroidManifest.xml:5:5-44
+MERGED from [androidx.camera:camera-view:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\bb611b8394903fe8e18cd2e67c2b12ce\transformed\camera-view-1.4.0\AndroidManifest.xml:5:5-44
+MERGED from [androidx.camera:camera-view:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\bb611b8394903fe8e18cd2e67c2b12ce\transformed\camera-view-1.4.0\AndroidManifest.xml:5:5-44
+MERGED from [androidx.camera:camera-lifecycle:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\f2ab3224317390c71c0a4003a9f9bcbe\transformed\camera-lifecycle-1.4.0\AndroidManifest.xml:5:5-44
+MERGED from [androidx.camera:camera-lifecycle:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\f2ab3224317390c71c0a4003a9f9bcbe\transformed\camera-lifecycle-1.4.0\AndroidManifest.xml:5:5-44
+MERGED from [androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:21:5-44
+MERGED from [androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:21:5-44
+MERGED from [androidx.camera:camera-core:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\aaa50feee6d8d9961db2930291e40f40\transformed\camera-core-1.4.0\AndroidManifest.xml:21:5-44
+MERGED from [androidx.camera:camera-core:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\aaa50feee6d8d9961db2930291e40f40\transformed\camera-core-1.4.0\AndroidManifest.xml:21:5-44
+MERGED from [androidx.appcompat:appcompat:1.1.0] C:\Users\rolid\.gradle\caches\8.9\transforms\1150cd14dcd1571c6ea02bfabb22597c\transformed\appcompat-1.1.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.appcompat:appcompat:1.1.0] C:\Users\rolid\.gradle\caches\8.9\transforms\1150cd14dcd1571c6ea02bfabb22597c\transformed\appcompat-1.1.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.fragment:fragment:1.1.0] C:\Users\rolid\.gradle\caches\8.9\transforms\e2755cd803d9283c17f0ef7d65433d4d\transformed\fragment-1.1.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.fragment:fragment:1.1.0] C:\Users\rolid\.gradle\caches\8.9\transforms\e2755cd803d9283c17f0ef7d65433d4d\transformed\fragment-1.1.0\AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.activity:activity:1.9.3] C:\Users\rolid\.gradle\caches\8.9\transforms\653d97b9f1f5e026ff383427932ff241\transformed\activity-1.9.3\AndroidManifest.xml:20:5-44
 MERGED from [androidx.activity:activity:1.9.3] C:\Users\rolid\.gradle\caches\8.9\transforms\653d97b9f1f5e026ff383427932ff241\transformed\activity-1.9.3\AndroidManifest.xml:20:5-44
 MERGED from [androidx.activity:activity-ktx:1.9.3] C:\Users\rolid\.gradle\caches\8.9\transforms\513384880b753916fdcafe1f9de1c752\transformed\activity-ktx-1.9.3\AndroidManifest.xml:5:5-44
@@ -213,20 +273,28 @@ MERGED from [androidx.savedstate:savedstate-ktx:1.2.1] C:\Users\rolid\.gradle\ca
 MERGED from [androidx.savedstate:savedstate-ktx:1.2.1] C:\Users\rolid\.gradle\caches\8.9\transforms\28b426be20963918bcfae54253424e55\transformed\savedstate-ktx-1.2.1\AndroidManifest.xml:20:5-44
 MERGED from [androidx.savedstate:savedstate:1.2.1] C:\Users\rolid\.gradle\caches\8.9\transforms\9ea7d73ec8113be4ec41ec8889d6db9b\transformed\savedstate-1.2.1\AndroidManifest.xml:20:5-44
 MERGED from [androidx.savedstate:savedstate:1.2.1] C:\Users\rolid\.gradle\caches\8.9\transforms\9ea7d73ec8113be4ec41ec8889d6db9b\transformed\savedstate-1.2.1\AndroidManifest.xml:20:5-44
+MERGED from [androidx.loader:loader:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\4e8912e81df2316e945599c4b24b677f\transformed\loader-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.loader:loader:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\4e8912e81df2316e945599c4b24b677f\transformed\loader-1.0.0\AndroidManifest.xml:20:5-44
 MERGED from [androidx.emoji2:emoji2:1.3.0] C:\Users\rolid\.gradle\caches\8.9\transforms\be67dd832882137851d4bac6e98b61a5\transformed\emoji2-1.3.0\AndroidManifest.xml:21:5-44
 MERGED from [androidx.emoji2:emoji2:1.3.0] C:\Users\rolid\.gradle\caches\8.9\transforms\be67dd832882137851d4bac6e98b61a5\transformed\emoji2-1.3.0\AndroidManifest.xml:21:5-44
 MERGED from [androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\3cb277b44e02ffc06265797d094f7a8b\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:21:5-44
 MERGED from [androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\3cb277b44e02ffc06265797d094f7a8b\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:21:5-44
-MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\51c445163eb60914c20f22c5fdb8ed69\transformed\lifecycle-livedata-core-2.8.7\AndroidManifest.xml:20:5-44
-MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\51c445163eb60914c20f22c5fdb8ed69\transformed\lifecycle-livedata-core-2.8.7\AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\5c163a4014fcf2122375062498da7e30\transformed\lifecycle-viewmodel-2.8.7\AndroidManifest.xml:4:5-43
+MERGED from [androidx.lifecycle:lifecycle-viewmodel:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\5c163a4014fcf2122375062498da7e30\transformed\lifecycle-viewmodel-2.8.7\AndroidManifest.xml:4:5-43
 MERGED from [androidx.lifecycle:lifecycle-viewmodel-android:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\956a590224ae138080ae2e1b610ccb5c\transformed\lifecycle-viewmodel-release\AndroidManifest.xml:20:5-44
 MERGED from [androidx.lifecycle:lifecycle-viewmodel-android:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\956a590224ae138080ae2e1b610ccb5c\transformed\lifecycle-viewmodel-release\AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core-ktx:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\42b0c545cddb29342219f5c54f129db7\transformed\lifecycle-livedata-core-ktx-2.8.7\AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core-ktx:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\42b0c545cddb29342219f5c54f129db7\transformed\lifecycle-livedata-core-ktx-2.8.7\AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\51c445163eb60914c20f22c5fdb8ed69\transformed\lifecycle-livedata-core-2.8.7\AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\51c445163eb60914c20f22c5fdb8ed69\transformed\lifecycle-livedata-core-2.8.7\AndroidManifest.xml:20:5-44
 MERGED from [androidx.lifecycle:lifecycle-runtime-android:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\5ebcb578025b951a4e29ae1e8385f42b\transformed\lifecycle-runtime-release\AndroidManifest.xml:20:5-44
 MERGED from [androidx.lifecycle:lifecycle-runtime-android:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\5ebcb578025b951a4e29ae1e8385f42b\transformed\lifecycle-runtime-release\AndroidManifest.xml:20:5-44
 MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\1a670d7f38af3be0dc5d55f807eec69f\transformed\lifecycle-viewmodel-savedstate-2.8.7\AndroidManifest.xml:20:5-44
 MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\1a670d7f38af3be0dc5d55f807eec69f\transformed\lifecycle-viewmodel-savedstate-2.8.7\AndroidManifest.xml:20:5-44
 MERGED from [androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\9ee3560f1a99ef35bab770f1fa93a91e\transformed\lifecycle-viewmodel-ktx-2.8.7\AndroidManifest.xml:5:5-44
 MERGED from [androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\9ee3560f1a99ef35bab770f1fa93a91e\transformed\lifecycle-viewmodel-ktx-2.8.7\AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\1978b40031a1d8c6e856b2bfe40d3172\transformed\lifecycle-livedata-2.8.7\AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\1978b40031a1d8c6e856b2bfe40d3172\transformed\lifecycle-livedata-2.8.7\AndroidManifest.xml:20:5-44
 MERGED from [androidx.lifecycle:lifecycle-runtime-compose-android:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\d0502c1de04ead2b611e68f4b9f8f7aa\transformed\lifecycle-runtime-compose-release\AndroidManifest.xml:5:5-44
 MERGED from [androidx.lifecycle:lifecycle-runtime-compose-android:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\d0502c1de04ead2b611e68f4b9f8f7aa\transformed\lifecycle-runtime-compose-release\AndroidManifest.xml:5:5-44
 MERGED from [androidx.lifecycle:lifecycle-runtime-ktx-android:2.8.7] C:\Users\rolid\.gradle\caches\8.9\transforms\b4092a698a1f5de13353cb84fcd287c8\transformed\lifecycle-runtime-ktx-release\AndroidManifest.xml:5:5-44
@@ -239,8 +307,20 @@ MERGED from [androidx.compose.material:material-icons-core-android:1.7.5] C:\Use
 MERGED from [androidx.compose.material:material-icons-core-android:1.7.5] C:\Users\rolid\.gradle\caches\8.9\transforms\f4317c5827fe01a25f72761d7a0c7f29\transformed\material-icons-core-release\AndroidManifest.xml:5:5-44
 MERGED from [androidx.compose.ui:ui-android:1.7.5] C:\Users\rolid\.gradle\caches\8.9\transforms\78d9f79b343701a4fd5013df0fd23ef7\transformed\ui-release\AndroidManifest.xml:5:5-44
 MERGED from [androidx.compose.ui:ui-android:1.7.5] C:\Users\rolid\.gradle\caches\8.9\transforms\78d9f79b343701a4fd5013df0fd23ef7\transformed\ui-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.appcompat:appcompat-resources:1.1.0] C:\Users\rolid\.gradle\caches\8.9\transforms\1105612ddb3d8b363064329a407f0694\transformed\appcompat-resources-1.1.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.appcompat:appcompat-resources:1.1.0] C:\Users\rolid\.gradle\caches\8.9\transforms\1105612ddb3d8b363064329a407f0694\transformed\appcompat-resources-1.1.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.drawerlayout:drawerlayout:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\7a2b68ab04b0b0a16ed6e83756944544\transformed\drawerlayout-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.drawerlayout:drawerlayout:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\7a2b68ab04b0b0a16ed6e83756944544\transformed\drawerlayout-1.0.0\AndroidManifest.xml:20:5-44
 MERGED from [androidx.autofill:autofill:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\5e2795e3473bb2518d4e411b4d29e5c7\transformed\autofill-1.0.0\AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.autofill:autofill:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\5e2795e3473bb2518d4e411b4d29e5c7\transformed\autofill-1.0.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.viewpager:viewpager:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\5808dae57f6070f6e4c942f1438645a4\transformed\viewpager-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.viewpager:viewpager:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\5808dae57f6070f6e4c942f1438645a4\transformed\viewpager-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] C:\Users\rolid\.gradle\caches\8.9\transforms\dd91670b82e83c0152fad53346b33e8c\transformed\vectordrawable-animated-1.1.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] C:\Users\rolid\.gradle\caches\8.9\transforms\dd91670b82e83c0152fad53346b33e8c\transformed\vectordrawable-animated-1.1.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.vectordrawable:vectordrawable:1.1.0] C:\Users\rolid\.gradle\caches\8.9\transforms\1cfd699c179bc45737338e05d964f082\transformed\vectordrawable-1.1.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.vectordrawable:vectordrawable:1.1.0] C:\Users\rolid\.gradle\caches\8.9\transforms\1cfd699c179bc45737338e05d964f082\transformed\vectordrawable-1.1.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.customview:customview:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\658dab6b200850147ea94c4e3c0559de\transformed\customview-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.customview:customview:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\658dab6b200850147ea94c4e3c0559de\transformed\customview-1.0.0\AndroidManifest.xml:20:5-44
 MERGED from [androidx.graphics:graphics-path:1.0.1] C:\Users\rolid\.gradle\caches\8.9\transforms\8f5e3cbde1aeaab7a26c65b8ac664e54\transformed\graphics-path-1.0.1\AndroidManifest.xml:5:5-44
 MERGED from [androidx.graphics:graphics-path:1.0.1] C:\Users\rolid\.gradle\caches\8.9\transforms\8f5e3cbde1aeaab7a26c65b8ac664e54\transformed\graphics-path-1.0.1\AndroidManifest.xml:5:5-44
 MERGED from [androidx.core:core:1.13.1] C:\Users\rolid\.gradle\caches\8.9\transforms\af19c7e1dff59c494b00b46e212ebbae\transformed\core-1.13.1\AndroidManifest.xml:20:5-44
@@ -263,22 +343,48 @@ MERGED from [androidx.compose.runtime:runtime-android:1.7.5] C:\Users\rolid\.gra
 MERGED from [androidx.compose.runtime:runtime-android:1.7.5] C:\Users\rolid\.gradle\caches\8.9\transforms\558095f29ca76c8a339bafb593b180ab\transformed\runtime-release\AndroidManifest.xml:5:5-44
 MERGED from [androidx.annotation:annotation-experimental:1.4.1] C:\Users\rolid\.gradle\caches\8.9\transforms\34dabe41d25b5c4438b1c6669b7ed45a\transformed\annotation-experimental-1.4.1\AndroidManifest.xml:5:5-44
 MERGED from [androidx.annotation:annotation-experimental:1.4.1] C:\Users\rolid\.gradle\caches\8.9\transforms\34dabe41d25b5c4438b1c6669b7ed45a\transformed\annotation-experimental-1.4.1\AndroidManifest.xml:5:5-44
-MERGED from [androidx.arch.core:core-runtime:2.2.0] C:\Users\rolid\.gradle\caches\8.9\transforms\dcc2bec987150e36a464c95ec9c971dc\transformed\core-runtime-2.2.0\AndroidManifest.xml:20:5-44
-MERGED from [androidx.arch.core:core-runtime:2.2.0] C:\Users\rolid\.gradle\caches\8.9\transforms\dcc2bec987150e36a464c95ec9c971dc\transformed\core-runtime-2.2.0\AndroidManifest.xml:20:5-44
-MERGED from [androidx.interpolator:interpolator:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\f378aa6983f9dd82feffb0e143435cbd\transformed\interpolator-1.0.0\AndroidManifest.xml:20:5-44
-MERGED from [androidx.interpolator:interpolator:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\f378aa6983f9dd82feffb0e143435cbd\transformed\interpolator-1.0.0\AndroidManifest.xml:20:5-44
-MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\rolid\.gradle\caches\8.9\transforms\1771e349d9ff85dee6fdf57c00a0d628\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:20:5-22:41
-MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\rolid\.gradle\caches\8.9\transforms\1771e349d9ff85dee6fdf57c00a0d628\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:21:5-44
 MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rolid\.gradle\caches\8.9\transforms\dd8fcee0639cf7317f0856b81b89a69c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:21:5-44
 MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\rolid\.gradle\caches\8.9\transforms\1f9902d6379a51311da8f1455625ea50\transformed\startup-runtime-1.1.1\AndroidManifest.xml:21:5-23:41
 MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\rolid\.gradle\caches\8.9\transforms\1f9902d6379a51311da8f1455625ea50\transformed\startup-runtime-1.1.1\AndroidManifest.xml:21:5-23:41
-MERGED from [androidx.tracing:tracing:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\cf4a6c84db0e20aa4b06f14ca6cfc926\transformed\tracing-1.0.0\AndroidManifest.xml:20:5-22:41
-MERGED from [androidx.tracing:tracing:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\cf4a6c84db0e20aa4b06f14ca6cfc926\transformed\tracing-1.0.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.tracing:tracing:1.2.0] C:\Users\rolid\.gradle\caches\8.9\transforms\fbcfdf435c546b61f53203e26d6170a9\transformed\tracing-1.2.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.tracing:tracing:1.2.0] C:\Users\rolid\.gradle\caches\8.9\transforms\fbcfdf435c546b61f53203e26d6170a9\transformed\tracing-1.2.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.tracing:tracing-ktx:1.2.0] C:\Users\rolid\.gradle\caches\8.9\transforms\cd1b529a4879f635cb6b1c987f19e123\transformed\tracing-ktx-1.2.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.tracing:tracing-ktx:1.2.0] C:\Users\rolid\.gradle\caches\8.9\transforms\cd1b529a4879f635cb6b1c987f19e123\transformed\tracing-ktx-1.2.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.arch.core:core-runtime:2.2.0] C:\Users\rolid\.gradle\caches\8.9\transforms\dcc2bec987150e36a464c95ec9c971dc\transformed\core-runtime-2.2.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.arch.core:core-runtime:2.2.0] C:\Users\rolid\.gradle\caches\8.9\transforms\dcc2bec987150e36a464c95ec9c971dc\transformed\core-runtime-2.2.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.exifinterface:exifinterface:1.3.2] C:\Users\rolid\.gradle\caches\8.9\transforms\9cd6b7339e65dc1e51d220cf3036fa7d\transformed\exifinterface-1.3.2\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.exifinterface:exifinterface:1.3.2] C:\Users\rolid\.gradle\caches\8.9\transforms\9cd6b7339e65dc1e51d220cf3036fa7d\transformed\exifinterface-1.3.2\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.interpolator:interpolator:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\f378aa6983f9dd82feffb0e143435cbd\transformed\interpolator-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.interpolator:interpolator:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\f378aa6983f9dd82feffb0e143435cbd\transformed\interpolator-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\rolid\.gradle\caches\8.9\transforms\1771e349d9ff85dee6fdf57c00a0d628\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\rolid\.gradle\caches\8.9\transforms\1771e349d9ff85dee6fdf57c00a0d628\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\71ffbbfd4b330287a53efa562dcb4702\transformed\cursoradapter-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] C:\Users\rolid\.gradle\caches\8.9\transforms\71ffbbfd4b330287a53efa562dcb4702\transformed\cursoradapter-1.0.0\AndroidManifest.xml:20:5-44
 	android:targetSdkVersion
 		INJECTED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml
 	android:minSdkVersion
 		INJECTED from D:\VSvode\Project\quik\app\src\main\AndroidManifest.xml
+service#androidx.camera.core.impl.MetadataHolderService
+ADDED from [androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:24:9-33:19
+MERGED from [androidx.camera:camera-core:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\aaa50feee6d8d9961db2930291e40f40\transformed\camera-core-1.4.0\AndroidManifest.xml:29:9-33:78
+MERGED from [androidx.camera:camera-core:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\aaa50feee6d8d9961db2930291e40f40\transformed\camera-core-1.4.0\AndroidManifest.xml:29:9-33:78
+	tools:node
+		ADDED from [androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:29:13-31
+	android:enabled
+		ADDED from [androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:26:13-36
+	android:exported
+		ADDED from [androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:27:13-37
+	tools:ignore
+		ADDED from [androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:28:13-75
+	android:name
+		ADDED from [androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:25:13-75
+meta-data#androidx.camera.core.impl.MetadataHolderService.DEFAULT_CONFIG_PROVIDER
+ADDED from [androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:30:13-32:89
+	android:value
+		ADDED from [androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:32:17-86
+	android:name
+		ADDED from [androidx.camera:camera-camera2:1.4.0] C:\Users\rolid\.gradle\caches\8.9\transforms\88d98b00814cbd8cd5df50781348c5e5\transformed\camera-camera2-1.4.0\AndroidManifest.xml:31:17-103
 activity#androidx.compose.ui.tooling.PreviewActivity
 ADDED from [androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\rolid\.gradle\caches\8.9\transforms\d442f0cec6e88ec6c1fadf17cfbbcf1d\transformed\ui-tooling-release\AndroidManifest.xml:23:9-25:39
 	android:exported

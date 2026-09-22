@@ -1,10 +1,10 @@
 [
     {
-        "merged": "com.quick.app-debug-51:/drawable_ic_stat_collect.xml.flat",
-        "source": "com.quick.app-main-53:/drawable/ic_stat_collect.xml"
+        "merged": "com.quick.app-debug-62:/xml_file_paths.xml.flat",
+        "source": "com.quick.app-main-64:/xml/file_paths.xml"
     },
     {
-        "merged": "com.quick.app-debug-51:/xml_file_paths.xml.flat",
-        "source": "com.quick.app-main-53:/xml/file_paths.xml"
+        "merged": "com.quick.app-debug-62:/drawable_ic_stat_collect.xml.flat",
+        "source": "com.quick.app-main-64:/drawable/ic_stat_collect.xml"
     }
 ]

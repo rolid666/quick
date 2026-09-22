@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.quick.app.torque.TorqueSessionTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-09-22T13:50:12" hostname="DESKTOP-T2R0P5R" time="0.004">
+  <properties/>
+  <testcase name="平均值按两位小数圆整" classname="com.quick.app.torque.TorqueSessionTest" time="0.001"/>
+  <testcase name="满组后的第 4 笔被忽略 不并入本组" classname="com.quick.app.torque.TorqueSessionTest" time="0.0"/>
+  <testcase name="三笔全一样 平均就是那个数" classname="com.quick.app.torque.TorqueSessionTest" time="0.0"/>
+  <testcase name="时间取第一笔与最后一笔" classname="com.quick.app.torque.TorqueSessionTest" time="0.0"/>
+  <testcase name="单位取第一笔" classname="com.quick.app.torque.TorqueSessionTest" time="0.0"/>
+  <testcase name="平均值四舍五入到两位" classname="com.quick.app.torque.TorqueSessionTest" time="0.0"/>
+  <testcase name="未满组时没有平均值" classname="com.quick.app.torque.TorqueSessionTest" time="0.0"/>
+  <testcase name="三笔依次进来 进度是 1 2 3" classname="com.quick.app.torque.TorqueSessionTest" time="0.001"/>
+  <testcase name="改成五次一组时逻辑不变" classname="com.quick.app.torque.TorqueSessionTest" time="0.0"/>
+  <testcase name="连续忽略多笔 计数如实累加" classname="com.quick.app.torque.TorqueSessionTest" time="0.0"/>
+  <testcase name="每笔原文都留着 且能拼成 hex" classname="com.quick.app.torque.TorqueSessionTest" time="0.001"/>
+  <testcase name="保存前不清空 重测才清空" classname="com.quick.app.torque.TorqueSessionTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

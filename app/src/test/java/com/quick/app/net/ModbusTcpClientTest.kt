@@ -3,6 +3,7 @@ package com.quick.app.net
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.DataInputStream
@@ -12,8 +13,11 @@ import java.net.Socket
 import java.util.concurrent.Executors
 
 /**
- * 帧编解码与快照解析 —— 用厂家《191AF/192AF 测试仪通讯示例》给出的
- * 真实报文结构与示例值验证（无真机时先锁定协议实现）。
+ * 帧编解码与快照解析。
+ * 寄存器语义按厂方手册《地址分配》表（`piture/file.webp` 第 2 页）：
+ * 0x00 实时温度 / 0x01 单位 / 0x02 实时电压 / 0x03 实时电阻 / 0x04 测量通道 /
+ * 0x0A~0x19 设备信息 / 0x1A 设定温度 / 0x1B~0x1C 温度判断 / 0x1D 电压上限 / 0x1E 电阻上限 /
+ * 0x1F 测试上传标志（★触发，读后清零）/ 0x20 保存温度 / 0x21 保存电压 / 0x22 保存电阻 / 0x23 判定。
  */
 class ModbusTcpClientTest {
 
@@ -82,6 +86,32 @@ class ModbusTcpClientTest {
         ) + pdu
     }
 
+    /** 按手册地址分配表造一帧"刚按过保存"的仪器数据 */
+    private fun savedFrame(): IntArray {
+        val regs = IntArray(Registers.TOTAL)
+        regs[0x00] = 0x00EA      // 实时温度 23.4 ℃
+        regs[0x01] = 0          // ℃
+        regs[0x02] = 67         // 实时电压 6.7 mV
+        regs[0x03] = 25         // 实时电阻 2.5 Ω
+        regs[0x04] = 0          // 测量通道：温度
+        val info = "QK-HT-001".toByteArray(Charsets.US_ASCII)
+        val pad = ByteArray(Registers.INFO_COUNT * 2 - info.size)
+        (info + pad).toList().chunked(2).forEachIndexed { i, b ->
+            regs[Registers.INFO_START + i] = ((b[0].toInt() and 0xFF) shl 8) or (b[1].toInt() and 0xFF)
+        }
+        regs[0x1A] = 350        // 设定温度
+        regs[0x1B] = 340        // 温度判断下限
+        regs[0x1C] = 360        // 温度判断上限
+        regs[0x1D] = 20         // 电压判断上限 2.0 mV
+        regs[0x1E] = 20         // 电阻判断上限 2.0 Ω
+        regs[0x1F] = 1          // ★测试上传标志：保存按钮按下
+        regs[0x20] = 351        // ★测试保存温度（仪器定格值）
+        regs[0x21] = 5          // ★测试保存电压 0.5 mV
+        regs[0x22] = 10         // ★测试保存电阻 1.0 Ω
+        regs[0x23] = 1          // ★判定 OK
+        return regs
+    }
+
     @Test
     fun `全读请求字节与厂家报文格式一致`() {
         val dev = MockDevice { _, tx, _ ->
@@ -93,10 +123,10 @@ class ModbusTcpClientTest {
             client.connect("127.0.0.1", dev.port, 2000, 1000)
             client.readHoldingRegisters(0, Registers.TOTAL)
             val req = dev.requests.first()
-            // 厂家 TCP 示例: 00 01 00 00 00 06 01 03 00 00 00 0A（读10个）；全读为 0x001F
-            // 首笔事务 ID = 0001（与厂家示例一致）
+            // 厂家 TCP 示例: 00 01 00 00 00 06 01 03 00 00 00 0A（读 10 个）；
+            // 本项目全读 0x00~0x23 共 36 个 = 0x0024；首笔事务 ID = 0001（与厂家示例一致）
             val expected = byteArrayOf(
-                0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x01, 0x03, 0x00, 0x00, 0x00, 0x1F
+                0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x01, 0x03, 0x00, 0x00, 0x00, 0x24
             )
             assertArrayEquals("请求帧应严格等于 MBAP(7) + FC03 PDU(5)", expected, req)
         } finally {
@@ -106,43 +136,44 @@ class ModbusTcpClientTest {
     }
 
     @Test
-    fun `按实机实测映射解析寄存器`() {
-        // 实机实测（2026-09，已取代厂家文档语义，见 Registers.kt）：
-        // 0x00=0x00EA(234 → 23.4℃)、0x01=0(℃)、0x02=67(6.7mV)、0x03=15(min)、0x04=1(OK)、
-        // 0x0A 起 "QK-HT-001"、0x1B=350(目标)、0x1C=280(下限)、0x1D=320(上限)、0x1E=0x14(刚按下保存)
-        val regs = IntArray(Registers.TOTAL)
-        regs[0x00] = 0x00EA
-        regs[0x01] = 0
-        regs[0x02] = 67
-        regs[0x03] = 15
-        regs[0x04] = 1
-        val snBytes = "QK-HT-001".toByteArray(Charsets.US_ASCII)
-        val pad = ByteArray(32 - snBytes.size)
-        val snRegs = (snBytes + pad).toList().chunked(2).map { ((it[0].toInt() and 0xFF) shl 8) or (it[1].toInt() and 0xFF) }
-        snRegs.forEachIndexed { i, v -> regs[0x0A + i] = v }
-        regs[0x1B] = 350
-        regs[0x1C] = 280
-        regs[0x1D] = 320
-        regs[0x1E] = 0x14
-
+    fun `按手册地址分配表解析整帧结果`() {
+        val regs = savedFrame()
         val dev = MockDevice { _, tx, unit -> readResponse(tx, unit, regs) }.also { it.start() }
         val client = ModbusTcpClient()
         try {
             client.connect("127.0.0.1", dev.port, 2000, 1000)
             val got = client.readHoldingRegisters(0, Registers.TOTAL)
             val snap = DeviceSnapshot.parse(got)
-            assertEquals(31, got.size)
-            assertEquals(23.4, snap.liveTempC!!, 0.001)   // 0x00 ×0.1
+            assertEquals(36, got.size)
+            assertTrue(snap.hasResultBlock)
+
+            // 实时量（×0.1 缩放）
+            assertEquals(23.4, snap.liveTempC!!, 0.001)
             assertEquals(0, snap.unit)
-            assertEquals(6.7, snap.leakageMv!!, 0.001)    // 0x02 ×0.1 mV
-            assertEquals(15, snap.autoOffMin)
-            assertEquals(true, snap.judgedOk)             // 0x04 非 0 = OK
-            assertEquals("QK-HT-001", snap.deviceInfo)    // 0x0A~0x19 ASCII
-            assertEquals(350, snap.targetTemp)            // 0x1B ×1，不缩放
-            assertEquals(280, snap.tempLow)
-            assertEquals(320, snap.tempHigh)
-            assertEquals(0x14, snap.saveFlagRaw)
+            assertEquals(6.7, snap.liveVoltageMv!!, 0.001)
+            assertEquals(2.5, snap.liveResistanceOhm!!, 0.001)
+            assertEquals(0, snap.channel)
+            assertEquals("QK-HT-001", snap.deviceInfo)
+
+            // 判据参数（整数 ℃ + ×0.1 上限）
+            assertEquals(350, snap.targetTemp)
+            assertEquals(340, snap.tempLow)
+            assertEquals(360, snap.tempHigh)
+            assertEquals(2.0, snap.voltageLimitMv!!, 0.001)
+            assertEquals(2.0, snap.resistanceLimitOhm!!, 0.001)
+
+            // 结果块（0x1F 标志=1 时有效）
+            assertEquals(1, snap.uploadFlag)
             assertTrue(snap.hasSaveFlag)
+            assertEquals(351, snap.savedTempC)
+            assertEquals(0.5, snap.savedVoltageMv!!, 0.001)
+            assertEquals(1.0, snap.savedResistanceOhm!!, 0.001)
+            assertEquals(1, snap.judge)
+            assertEquals("OK", snap.resultText)
+            assertEquals(true, snap.judgedOk)
+
+            // 记录用测量温度 = 仪器定格的 0x20（不是实时温度 23.4）
+            assertEquals(351.0, snap.measuredTempC!!, 0.001)
         } finally {
             client.disconnect()
             dev.stop()
@@ -150,47 +181,77 @@ class ModbusTcpClientTest {
     }
 
     @Test
-    fun `判定 0x04 为 0 是 NG 非 0 是 OK`() {
-        // 实测：0=NG；OK 实测见过 1 与 2 两种值，故一律按「非 0」处理，不写死具体数值
-        for (v in intArrayOf(0, 1, 2)) {
+    fun `判定 0x23 三种取值分别对应 OK NG 无效`() {
+        // 手册：0=NG、1=OK、2=无效 —— 2 绝不能当成 OK（用户实测中确实出现过 2）
+        for ((v, expect) in listOf(0 to "NG", 1 to "OK", 2 to "无效")) {
             val regs = IntArray(Registers.TOTAL)
             regs[Registers.JUDGE] = v
             val snap = DeviceSnapshot.parse(regs)
-            assertEquals("0x04=$v 时判定应为 ${v != 0}", v != 0, snap.judgedOk)
+            assertEquals("0x23=$v 时应为 $expect", expect, snap.resultText)
+            assertEquals(v == 1, snap.judgedOk)
+            assertEquals(v == 2, snap.judgedInvalid)
         }
     }
 
     @Test
-    fun `保存标志未按下时不触发`() {
+    fun `上传标志未按下时不触发`() {
         val regs = IntArray(Registers.TOTAL)   // 全 0 = 仪器待机
         val snap = DeviceSnapshot.parse(regs)
-        assertEquals(0, snap.saveFlagRaw)
+        assertEquals(0, snap.uploadFlag)
         assertTrue(!snap.hasSaveFlag)
-        assertEquals(null, snap.deviceInfo)    // 空字符串 → null，不占列表
+        assertEquals(0, snap.triggerRaw)
+        assertNull(snap.deviceInfo)            // 空字符串 → null，不占列表
     }
 
     @Test
-    fun `内容签名只随判定与目标变化 不随实时温度或漏压变化`() {
-        // 用途：0x1E 保持期内又按一次保存时标志不回 0，靠签名差异识别第二笔（如 NG 后复测 OK）；
-        // 而实时温度与漏地电压持续变化，若纳入签名会导致保持期内反复误触发。
-        fun snapOf(judge: Int, target: Int, live: Int, leak: Int): DeviceSnapshot {
+    fun `老固件只给 0x00~0x1E 时降级解析不崩且结果块为空`() {
+        val regs = IntArray(Registers.LEGACY_TOTAL)   // 31 个：无结果块
+        regs[0x00] = 0x00EA
+        regs[Registers.RES_LIMIT] = 20                // 此模式下 0x1E 是电阻判断上限
+        val snap = DeviceSnapshot.parse(regs)
+        assertTrue(!snap.hasResultBlock)
+        assertNull(snap.uploadFlag)
+        assertNull(snap.judge)
+        assertEquals(23.4, snap.measuredTempC!!, 0.001)   // 无定格值 → 回落实时温度
+        assertEquals(20, snap.triggerRaw)                 // 降级触发值退回 0x1E
+    }
+
+    @Test
+    fun `内容签名只随保存字段变化 不随实时量与通道变化`() {
+        // 用途：① 0x1F 保持约 1 s（实测），0.9 s 轮询可能读到两帧 → 签名相同即跳过；
+        //      ② 标志已回 0 但签名变了 → 补收「读晚了」的那一笔。
+        // 因此签名**只能**含「按保存才会写」的 0x20~0x23：实时量持续在变，切通道/改设定温度
+        // 都不代表新结果 —— 纳入任何一个都会造成与操作不符的重复记录（补收通道尤其危险）。
+        fun snapOf(
+            judge: Int, savedTemp: Int, savedV: Int,
+            liveTemp: Int = 218, liveV: Int = 12, channel: Int = 0, target: Int = 350
+        ): DeviceSnapshot {
             val regs = IntArray(Registers.TOTAL)
             regs[Registers.JUDGE] = judge
+            regs[Registers.SAVED_TEMP] = savedTemp
+            regs[Registers.SAVED_VOLTAGE] = savedV
+            regs[Registers.LIVE_TEMP] = liveTemp
+            regs[Registers.LIVE_VOLTAGE] = liveV
+            regs[Registers.CHANNEL] = channel
             regs[Registers.TARGET_TEMP] = target
-            regs[Registers.TEMP] = live
-            regs[Registers.LEAKAGE] = leak
             return DeviceSnapshot.parse(regs)
         }
-        val base = snapOf(0, 350, 218, 12)
-        assertEquals(base.contentSignature, snapOf(0, 350, 3510, 99).contentSignature)
-        assertNotEquals(base.contentSignature, snapOf(1, 350, 218, 12).contentSignature)
-        assertNotEquals(base.contentSignature, snapOf(0, 360, 218, 12).contentSignature)
+        val base = snapOf(1, 351, 5)
+        assertEquals("实时温度/电压变化 → 签名不变", base.contentSignature,
+            snapOf(1, 351, 5, liveTemp = 3510, liveV = 99).contentSignature)
+        assertEquals("操作员切测量通道 → 签名不变", base.contentSignature,
+            snapOf(1, 351, 5, channel = 2).contentSignature)
+        assertEquals("操作员改设定温度 → 签名不变", base.contentSignature,
+            snapOf(1, 351, 5, target = 400).contentSignature)
+        assertNotEquals("判定变化 → 签名变化", base.contentSignature, snapOf(0, 351, 5).contentSignature)
+        assertNotEquals("保存温度变化 → 签名变化", base.contentSignature, snapOf(1, 352, 5).contentSignature)
+        assertNotEquals("保存电压变化 → 签名变化", base.contentSignature, snapOf(1, 351, 6).contentSignature)
     }
 
     @Test
     fun `异常应答抛出 ModbusException`() {
         val dev = MockDevice { req, tx, unit ->
-            // 非法地址: FC 0x83 + code 0x02
+            // 非法地址: FC 0x83 + code 0x02（老固件读到 0x1F 之外即为此种应答）
             byteArrayOf(
                 (tx ushr 8).toByte(), tx.toByte(), 0, 0, 0, 3, unit.toByte(), 0x83.toByte(), 0x02
             )

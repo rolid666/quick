@@ -1,27 +1,32 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-191AF+ 模拟器（PC 端）—— 无真机时验证 App 整链路用。
+191AF+/192AF 模拟器（PC 端）—— 无真机时验证 App 整链路用。
 
-寄存器语义按 **实机实测版（2026-09，取代厂家文档）**，与
+寄存器语义严格按厂方手册《地址分配》表（piture/file.webp 第 2 页），与
 app/src/main/java/com/quick/app/net/Registers.kt 一一对应：
 
-    0x00 实时温度 ×0.1 ℃        0x01 温度单位（0=℃ 1=℉）   0x02 漏地电压 ×0.1 mV
-    0x03 自动关机（分钟）        0x04 判定（0=NG，非 0=OK）    0x05~0x09 备用
-    0x0A~0x19 设备信息字符串（32 字节 ASCII）
-    0x1A 未知（待实测，保持 0）   0x1B 目标温度 ℃
-    0x1C 温度下限 ℃             0x1D 温度上限 ℃
-    0x1E 结果保存标志：未按=0，按下=0x14(20)，保持 HOLD_SEC 秒后自清
+    0x00 实时温度 ×0.1 ℃        0x01 温度单位(0=℃ 1=℉)
+    0x02 实时电压 ×0.1 mV       0x03 实时电阻 ×0.1 Ω
+    0x04 当前测量通道 0=温度 1=漏电压 2=地对地电阻
+    0x05~0x09 备用
+    0x0A~0x19 设备信息(扫码) 32 字节 ASCII
+    0x1A 设定温度 ℃             0x1B 温度判断下限 ℃      0x1C 温度判断上限 ℃
+    0x1D 电压判断上限 ×0.1 mV   0x1E 电阻判断上限 ×0.1 Ω
+    0x1F 测试上传标志：0=无效 1=保存按下（★触发；保持约 1 s 后自动清零）
+    0x20 测试保存温度 ℃（标志=1 时有效）
+    0x21 测试保存电压 ×0.1 mV   0x22 测试保存电阻 ×0.1 Ω
+    0x23 测试合格判定 0=NG 1=OK 2=无效
 
-MODBUS TCP/IP 服务端：FC03 读保持寄存器（支持一次全读 31 个 0x00~0x1E）、FC06 写单个。
+MODBUS TCP/IP 服务端：FC03 读保持寄存器（一次全读 36 个 0x00~0x23）、FC06 写单个。
 
-控制台命令：
-    s [温度] [ok|ng]   模拟操作员按仪器保存键：写 0x1E=0x14 + 0x04 判定，HOLD_SEC 秒后 0x1E 自清
-    t <温度℃>          改实时温度 0x00
-    l <mV>             改漏地电压 0x02
-    set <寄存器hex> <值>  直接写寄存器（调试）
-    show               显示寄存器内存
-    h                  帮助    q  退出
+控制台命令（模拟操作员在仪器上操作）：
+    s [温度℃] [ok|ng|inv] [miss]  模拟按「保存」：写 0x20~0x23 并置 0x1F=1，约 1 s 后自清；
+                           加 miss 则**不置标志**（模拟 App 读晚了、标志窗口已过 → 验证补收通道）；
+                           不传判定时按当前通道与判断上限自动判定
+    t <温度℃>    改实时温度 0x00        l <mV>     改实时电压 0x02
+    r <Ω>        改实时电阻 0x03        ch <0|1|2> 改测量通道 0x04
+    set <寄存器hex> <值>   直接写寄存器（调试）      show  显示寄存器内存      q  退出
 
 用法：
     python tools/simulate_191af.py                      # 监听 0.0.0.0:502
@@ -35,104 +40,110 @@ import time
 DEFAULT_HOST = "0.0.0.0"
 DEFAULT_PORT = 502
 
-TOTAL = 0x1F  # 31 个寄存器（0x00~0x1E），App 一次全读
+# 0x1F 保持时长（秒）：实机实测约 1 s（2026-09-14 用户提供）。
+# App 侧轮询周期须小于它（默认 0.9 s）；周期 + Wi-Fi 抖动若超出窗口，靠结果块签名补收。
+HOLD_SECONDS = 1.0
 
-TEMP = 0x00
+TOTAL = 0x24  # 0x00~0x23 共 36 个，App 一次全读
+
+LIVE_TEMP = 0x00
 UNIT = 0x01
-LEAKAGE = 0x02
-AUTO_OFF = 0x03
-JUDGE = 0x04
+LIVE_VOLTAGE = 0x02
+LIVE_RESISTANCE = 0x03
+CHANNEL = 0x04
 INFO_START = 0x0A
 INFO_COUNT = 16
-TARGET_TEMP = 0x1B
-TEMP_LOW = 0x1C
-TEMP_HIGH = 0x1D
-SAVE_FLAG = 0x1E
-SAVE_FLAG_VALUE = 0x14       # 实测：按下保存键时 0x1E = 0x0014
+TARGET_TEMP = 0x1A
+TEMP_LOW = 0x1B
+TEMP_HIGH = 0x1C
+VOLT_LIMIT = 0x1D
+RES_LIMIT = 0x1E
+UPLOAD_FLAG = 0x1F
+SAVED_TEMP = 0x20
+SAVED_VOLTAGE = 0x21
+SAVED_RESISTANCE = 0x22
+JUDGE = 0x23
 
-HOLD_SEC = 3.0               # 0x1E 保持时长真机未实测，模拟器取 3 秒（0.5s 轮询足以抓到）
+CH_NAMES = {0: "温度", 1: "漏电压", 2: "地对地电阻"}
 
 
 class Device:
     def __init__(self):
         self.regs = [0] * TOTAL
-        self.regs[UNIT] = 0            # ℃
-        self.regs[TEMP] = 218          # 21.8 ℃ 室温
-        self.regs[LEAKAGE] = 12        # 1.2 mV
-        self.regs[AUTO_OFF] = 0        # 不自动关机
-        self.regs[JUDGE] = 0           # 尚无判定
-        self.regs[TARGET_TEMP] = 350   # 目标 350 ℃
-        self.regs[TEMP_LOW] = 340      # 合格区间 340~360 ℃
+        self.regs[UNIT] = 0
+        self.regs[LIVE_TEMP] = 218       # 21.8 ℃
+        self.regs[LIVE_VOLTAGE] = 1      # 0.1 mV
+        self.regs[LIVE_RESISTANCE] = 3   # 0.3 Ω
+        self.regs[CHANNEL] = 0           # 温度通道
+        self.regs[TARGET_TEMP] = 350
+        self.regs[TEMP_LOW] = 340
         self.regs[TEMP_HIGH] = 360
-        info = b"QK-191AF+ SN0001"
+        self.regs[VOLT_LIMIT] = 20       # 2.0 mV
+        self.regs[RES_LIMIT] = 20        # 2.0 Ω
+        info = b"QK-HT-001"
         buf = info + b"\x00" * (INFO_COUNT * 2 - len(info))
         for i in range(INFO_COUNT):
             self.regs[INFO_START + i] = int.from_bytes(buf[i * 2:i * 2 + 2], "big")
         self.lock = threading.Lock()
-        self.hold_timer = None
-        self.ok_flip = False           # 真机 OK 值见过 1 与 2 → 交替给，逼 App 按「非 0」判定
+        self.flag_clear_at = 0.0   # 0x1F 的自动清零时刻（time.monotonic）
 
     # ---- 命令（操作员动作） ----
-    def press_save(self, temp=None, judge=None):
-        """模拟操作员在仪器上按「保存」：0x1E 置 0x14，held HOLD_SEC 秒后自清"""
+    def press_save(self, temp=None, judge=None, mark=True):
+        """模拟操作员在仪器上按「保存」：填 0x20~0x23；mark=False 表示不置标志（App 读晚了）"""
         with self.lock:
+            ch = self.regs[CHANNEL]
             if temp is not None:
-                # 实测：0x00 是不停刷新的实时温度；保存瞬间定格的那个温度寄存器尚未测出，
-                # App 侧暂用实时温度代替，故模拟器把 0x00 也设成刚测的值，行为等价。
-                self.regs[TEMP] = int(round(temp * 10))
+                # 温度通道按给定值；其它通道仍按实时值定格
+                self.regs[LIVE_TEMP] = int(round(temp * 10))
+            self.regs[SAVED_TEMP] = int(round(self.regs[LIVE_TEMP] / 10))
+            self.regs[SAVED_VOLTAGE] = self.regs[LIVE_VOLTAGE]
+            self.regs[SAVED_RESISTANCE] = self.regs[LIVE_RESISTANCE]
             if judge is None:
-                ok = self.regs[TEMP_LOW] * 10 <= self.regs[TEMP] <= self.regs[TEMP_HIGH] * 10
+                if ch == 1:
+                    v = 1 if self.regs[LIVE_VOLTAGE] <= self.regs[VOLT_LIMIT] else 0
+                elif ch == 2:
+                    v = 1 if self.regs[LIVE_RESISTANCE] <= self.regs[RES_LIMIT] else 0
+                else:
+                    t = self.regs[SAVED_TEMP]
+                    v = 1 if self.regs[TEMP_LOW] <= t <= self.regs[TEMP_HIGH] else 0
             elif isinstance(judge, str):
-                ok = judge.lower() in ("ok", "1", "true")
+                v = {"ok": 1, "ng": 0, "inv": 2}.get(judge.lower(), 1)
             else:
-                ok = bool(judge)
-            if ok:
-                self.ok_flip = not self.ok_flip
-                self.regs[JUDGE] = 2 if self.ok_flip else 1     # 非 0 即 OK
-            else:
-                self.regs[JUDGE] = 0                            # 0 = NG
-            self.regs[SAVE_FLAG] = SAVE_FLAG_VALUE
-            self._arm_clear()
-            print(f"[模拟保存] 0x1E=0x{SAVE_FLAG_VALUE:02X} 0x04={self.regs[JUDGE]} "
-                  f"({('OK' if self.regs[JUDGE] else 'NG')}) 0x00={self.regs[TEMP] / 10:.1f}℃")
-            print(f"           → {HOLD_SEC:.0f}s 后 0x1E 自动清零（模拟仪器保持期）")
+                v = int(judge)
+            self.regs[JUDGE] = v
+            if mark:
+                self.regs[UPLOAD_FLAG] = 1
+                self.flag_clear_at = time.monotonic() + HOLD_SECONDS
+        print(f"[模拟保存] 通道={CH_NAMES.get(ch, ch)} 0x1F={'1（保持 %.1fs 后自清）' % HOLD_SECONDS if mark else '0（未置标志：模拟读晚了）'} "
+              f"0x20={self.regs[SAVED_TEMP]}℃ 0x21={self.regs[SAVED_VOLTAGE] / 10:.1f}mV "
+              f"0x22={self.regs[SAVED_RESISTANCE] / 10:.1f}Ω 0x23={v}"
+              f"({['NG', 'OK', '无效'][v] if v in (0, 1, 2) else v})")
 
-    def _arm_clear(self):
-        if self.hold_timer is not None:
-            self.hold_timer.cancel()
-        self.hold_timer = threading.Timer(HOLD_SEC, self._clear_save_flag)
-        self.hold_timer.daemon = True
-        self.hold_timer.start()
-
-    def _clear_save_flag(self):
+    def set_val(self, addr, val, label, scale):
         with self.lock:
-            self.regs[SAVE_FLAG] = 0
-        print("[保持结束] 0x1E 已自清为 0")
-
-    def set_live_temp(self, celsius):
-        with self.lock:
-            self.regs[TEMP] = int(round(celsius * 10))
-        print(f"[测温] 0x00 = {self.regs[TEMP]} ({self.regs[TEMP] / 10:.1f}℃)")
-
-    def set_leakage(self, mv):
-        with self.lock:
-            self.regs[LEAKAGE] = int(round(mv * 10))
-        print(f"[漏地电压] 0x02 = {self.regs[LEAKAGE]} ({self.regs[LEAKAGE] / 10:.1f} mV)")
+            self.regs[addr] = int(round(val * scale))
+        print(f"[{label}] 0x{addr:02X} = {self.regs[addr]} ({self.regs[addr] / scale:.1f})")
 
     def dump(self):
         with self.lock:
-            print("0x00 实时温度:", self.regs[TEMP] / 10, "℃ | 0x01 单位:",
-                  "℃" if self.regs[UNIT] == 0 else "℉",
-                  "| 0x02 漏地电压:", self.regs[LEAKAGE] / 10, "mV")
-            print("0x03 自动关机:", self.regs[AUTO_OFF], "分钟 | 0x04 判定:",
-                  "OK" if self.regs[JUDGE] else "NG", f"({self.regs[JUDGE]})")
             info = b"".join(self.regs[INFO_START + i].to_bytes(2, "big") for i in range(INFO_COUNT))
+            print(f"0x00 实时温度 {self.regs[LIVE_TEMP] / 10:.1f}℃ | 0x01 单位 "
+                  f"{'℃' if self.regs[UNIT] == 0 else '℉'} | 0x02 实时电压 {self.regs[LIVE_VOLTAGE] / 10:.1f}mV "
+                  f"| 0x03 实时电阻 {self.regs[LIVE_RESISTANCE] / 10:.1f}Ω")
+            print(f"0x04 测量通道 {self.regs[CHANNEL]}（{CH_NAMES.get(self.regs[CHANNEL], '?')}）")
             print("0x0A~0x19 设备信息:", info.split(b"\x00")[0].decode("ascii", "replace"))
-            print("0x1A 未知:", self.regs[0x1A],
-                  "| 0x1B 目标:", self.regs[TARGET_TEMP], "℃",
-                  "| 0x1C 下限:", self.regs[TEMP_LOW], "℃",
-                  "| 0x1D 上限:", self.regs[TEMP_HIGH], "℃")
-            print("0x1E 保存标志:", self.regs[SAVE_FLAG], "(非 0 = 刚按过保存)")
+            print(f"0x1A 设定温度 {self.regs[TARGET_TEMP]}℃ | 0x1B~0x1C 温度判断 "
+                  f"{self.regs[TEMP_LOW]}~{self.regs[TEMP_HIGH]}℃")
+            print(f"0x1D 电压上限 {self.regs[VOLT_LIMIT] / 10:.1f}mV | 0x1E 电阻上限 "
+                  f"{self.regs[RES_LIMIT] / 10:.1f}Ω")
+            left = self.flag_clear_at - time.monotonic()
+            flag = f"{self.regs[UPLOAD_FLAG]}"
+            if self.regs[UPLOAD_FLAG] != 0:
+                flag += f"（还有 {left:.1f}s 自清）" if left > 0 else "（待自清）"
+            print(f"0x1F 上传标志 {flag} | 0x20 保存温度 {self.regs[SAVED_TEMP]}℃ "
+                  f"| 0x21 保存电压 {self.regs[SAVED_VOLTAGE] / 10:.1f}mV "
+                  f"| 0x22 保存电阻 {self.regs[SAVED_RESISTANCE] / 10:.1f}Ω "
+                  f"| 0x23 判定 {self.regs[JUDGE]}")
 
     # ---- MODBUS 处理 ----
     def handle_request(self, data):
@@ -148,6 +159,10 @@ class Device:
             if start + qty > TOTAL or qty > 125:
                 return tx + b"\x00\x00\x00\x03" + bytes([unit, 0x83, 0x02])
             with self.lock:
+                # 0x1F 由仪器自己的计时器清零（实测保持约 1 s），与是否被读取无关
+                if self.regs[UPLOAD_FLAG] != 0 and time.monotonic() >= self.flag_clear_at:
+                    self.regs[UPLOAD_FLAG] = 0
+                    print("[自清] 0x1F 保持期结束，标志已清零")
                 body = b"".join(v.to_bytes(2, "big") for v in self.regs[start:start + qty])
             pdu = bytes([0x03, len(body)]) + body
             return tx + b"\x00\x00" + (len(pdu) + 1).to_bytes(2, "big") + bytes([unit]) + pdu
@@ -212,13 +227,21 @@ def cmd_loop(dev, host, port):
         cmd = parts[0].lower()
         try:
             if cmd == "s":
-                temp = float(parts[1]) if len(parts) >= 2 else None
-                judge = parts[2] if len(parts) > 2 else None
-                dev.press_save(temp, judge)
+                mark = "miss" not in [p.lower() for p in parts[1:]]
+                args = [p for p in parts[1:] if p.lower() != "miss"]
+                temp = float(args[0]) if len(args) >= 1 else None
+                judge = args[1] if len(args) >= 2 else None
+                dev.press_save(temp, judge, mark)
             elif cmd == "t" and len(parts) >= 2:
-                dev.set_live_temp(float(parts[1]))
+                dev.set_val(LIVE_TEMP, float(parts[1]), "实时温度", 10)
             elif cmd == "l" and len(parts) >= 2:
-                dev.set_leakage(float(parts[1]))
+                dev.set_val(LIVE_VOLTAGE, float(parts[1]), "实时电压", 10)
+            elif cmd == "r" and len(parts) >= 2:
+                dev.set_val(LIVE_RESISTANCE, float(parts[1]), "实时电阻", 10)
+            elif cmd == "ch" and len(parts) >= 2:
+                with dev.lock:
+                    dev.regs[CHANNEL] = int(parts[1])
+                print(f"[测量通道] 0x04 = {dev.regs[CHANNEL]}（{CH_NAMES.get(dev.regs[CHANNEL], '?')}）")
             elif cmd == "set" and len(parts) >= 3:
                 with dev.lock:
                     dev.regs[int(parts[1], 16)] = int(parts[2])
@@ -226,8 +249,8 @@ def cmd_loop(dev, host, port):
             elif cmd == "show":
                 dev.dump()
             elif cmd in ("h", "help"):
-                print("命令: s [温度℃] [ok|ng] | t <温度℃> | l <mV> | "
-                      "set <寄存器hex> <值> | show | q")
+                print("命令: s [温度℃] [ok|ng|inv] [miss] | t <温度℃> | l <mV> | r <Ω> | "
+                      "ch <0|1|2> | set <寄存器hex> <值> | show | q")
             elif cmd == "q":
                 return
             else:
@@ -244,7 +267,8 @@ def main():
     th = threading.Thread(target=dev.serve, args=(host, port, stop), daemon=True)
     th.start()
     time.sleep(0.3)
-    print("控制台可输入命令（帮助: help）: s 351 ok → 模拟按保存键（351℃/OK）")
+    print("控制台可输入命令（帮助: help）: s 351 ok → 模拟按保存（351℃/OK）；"
+          "s 351 ok miss → 模拟标志窗口已过（验证补收）")
     dev.dump()
     cmd_loop(dev, host, port)
     stop.set()

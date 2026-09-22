@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.quick.app.qr.TempConfigQrTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-09-22T13:50:13" hostname="DESKTOP-T2R0P5R" time="0.002">
+  <properties/>
+  <testcase name="只选温度 —— 不出 SN（编号为空时不改动仪器上的编号）" classname="com.quick.app.qr.TempConfigQrTest" time="0.0"/>
+  <testcase name="只选接地电阻上限 —— 只有 RMAX 一条" classname="com.quick.app.qr.TempConfigQrTest" time="0.001"/>
+  <testcase name="上限设置显示名带单位，名称可直接做唯一索引" classname="com.quick.app.qr.TempConfigQrTest" time="0.0"/>
+  <testcase name="寄存器原值换算 —— 整数不带小数点，一位小数保留" classname="com.quick.app.qr.TempConfigQrTest" time="0.0"/>
+  <testcase name="只有设定温度没有误差范围 —— 整组不出（宁缺勿错配）" classname="com.quick.app.qr.TempConfigQrTest" time="0.0"/>
+  <testcase name="什么都没选 —— 返回 null，不生成空二维码" classname="com.quick.app.qr.TempConfigQrTest" time="0.0"/>
+  <testcase name="三项 + 设备编号全选 —— 顺序与厂家表格一致" classname="com.quick.app.qr.TempConfigQrTest" time="0.0"/>
+  <testcase name="只选设备编号 —— 也能出码（厂家单条指令示例就是一条 SN）" classname="com.quick.app.qr.TempConfigQrTest" time="0.0"/>
+  <testcase name="误差为 0 —— 上下限等于设定温度" classname="com.quick.app.qr.TempConfigQrTest" time="0.001"/>
+  <testcase name="设备编号两端空格被去掉" classname="com.quick.app.qr.TempConfigQrTest" time="0.0"/>
+  <testcase name="只选漏电压上限 —— 只有 VMAX 一条，不顺手改温度" classname="com.quick.app.qr.TempConfigQrTest" time="0.0"/>
+  <testcase name="温度设置显示名是 350±20（± 为 U+00B1，仅用于界面）" classname="com.quick.app.qr.TempConfigQrTest" time="0.0"/>
+  <testcase name="温度 + 设备编号 —— 与厂家示例同构" classname="com.quick.app.qr.TempConfigQrTest" time="0.0"/>
+  <testcase name="二维码内容必须是纯 ASCII" classname="com.quick.app.qr.TempConfigQrTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,36 +1,37 @@
 package com.quick.app.ui.measure
 
-import android.content.Context
-import android.os.VibrationEffect
-import android.os.Vibrator
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,7 +40,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,31 +48,50 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quick.app.QuickApp
-import com.quick.app.collect.CommLine
 import com.quick.app.collect.ConnState
 import com.quick.app.collect.MeasureUiState
+import com.quick.app.data.db.LIMIT_RMAX
+import com.quick.app.data.db.LIMIT_VMAX
+import com.quick.app.data.db.LimitPreset
 import com.quick.app.data.db.MeasurementRecord
+import com.quick.app.data.db.TempPreset
+import com.quick.app.net.channelText
+import com.quick.app.qr.QrGen
+import com.quick.app.ui.InvalidGrey
+import com.quick.app.ui.OkGreen
+import com.quick.app.ui.QrDialog
 import com.quick.app.ui.SearchableSelect
-import com.quick.app.ui.StatusChip
+import com.quick.app.ui.WarnOrange
+import com.quick.app.ui.WifiBlue
 import com.quick.app.ui.hms
 import com.quick.app.ui.intTempText
-import com.quick.app.ui.leakText
+import com.quick.app.ui.ohmText
 import com.quick.app.ui.rangeText
+import com.quick.app.ui.resultColor
+import com.quick.app.ui.resultLabel
 import com.quick.app.ui.tempText
-import kotlinx.coroutines.delay
+import com.quick.app.ui.voltText
 import kotlinx.coroutines.launch
 
-private val OkGreen = Color(0xFF2E7D32)
-private val NgRed = Color(0xFFC62828)
-private val WifiBlue = Color(0xFF1565C0)
-
 /**
- * 测量主页 —— 响应式：
- * - 宽屏（平板，≥700dp）：左信息面板 + 右结果/日志 双列
- * - 窄屏（手机竖屏）：全部卡片单列纵向排布，整体可滚动（任何高度下都不互相挤压）
+ * 测量主页 —— 常驻页，其他页面都从这里按按钮进入（用户 2026-09 定：不用底部导航栏）。
+ *
+ * 布局原则：**大字只留两个**（当前温度、最近结果），其余信息收成小字一行；
+ * 采集事件不再铺在页面上，要看日志进「诊断」页。
+ * - 宽屏（平板 ≥700dp）：温度与结果左右并排
+ * - 窄屏（手机）：上下堆叠
+ *
+ * 顶部一行的宽度分配是**硬要求**：标题可压缩、连接状态可压缩，**采集开关永远是固定宽度**。
+ * （旧写法里状态文字会先把宽度吃光，把「开始/停止采集」挤出屏幕 —— 2026-09 用户反馈的那个 bug）
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun MeasureScreen(openManage: () -> Unit, openDiag: () -> Unit) {
+fun MeasureScreen(
+    openHistory: () -> Unit,
+    openConfig: () -> Unit,
+    openManage: () -> Unit,
+    openDiag: () -> Unit
+) {
     val ctx = LocalContext.current
     val app = ctx.applicationContext as QuickApp
     val controller = app.controller
@@ -79,119 +99,230 @@ fun MeasureScreen(openManage: () -> Unit, openDiag: () -> Unit) {
     val state by controller.ui.collectAsStateWithLifecycle()
     val lines by app.db.lineDao().all().collectAsState(initial = emptyList())
     val models by app.db.modelDao().all().collectAsState(initial = emptyList())
+    val stations by app.db.stationDao().all().collectAsState(initial = emptyList())
+    val presets by app.db.tempPresetDao().all().collectAsState(initial = emptyList())
+    val limits by app.db.limitPresetDao().all().collectAsState(initial = emptyList())
+    val sns by app.db.deviceSnDao().all().collectAsState(initial = emptyList())
 
-    // 线别/机种选择（本地即时 + 持久化到 controller）
-    var lineSel by remember { mutableStateOf(controller.selectedLine) }
-    var modelSel by remember { mutableStateOf(controller.selectedModel) }
-    fun onLine(name: String?) { lineSel = name; scope.launch { controller.selectLine(name) } }
-    fun onModel(name: String?) { modelSel = name; scope.launch { controller.selectModel(name) } }
+    // 选择项全部来自控制器状态（保存后控制器清空设备编号，界面自动跟随）
+    val lineSel = state.selLine
+    val modelSel = state.selModel
+    val stationSel = state.selStation
+    val tempSel = state.selTempPreset
+    val vmaxSel = state.selVmax
+    val rmaxSel = state.selRmax
+    val snSel = state.selDeviceSn
+    fun onLine(name: String?) = scope.launch { controller.selectLine(name) }
+    fun onModel(name: String?) = scope.launch { controller.selectModel(name) }
+    fun onStation(name: String?) = scope.launch { controller.selectStation(name) }
+    fun onTemp(name: String?) = scope.launch { controller.selectTempPreset(name) }
+    fun onVmax(name: String?) = scope.launch { controller.selectVmax(name) }
+    fun onRmax(name: String?) = scope.launch { controller.selectRmax(name) }
+    fun onSn(name: String?) = scope.launch { controller.selectDeviceSn(name) }
 
-    // 新结果 → 弹卡 + 振动
-    var resultCard by remember { mutableStateOf<MeasurementRecord?>(null) }
-    LaunchedEffect(controller) {
-        controller.resultEvents.collect { rec ->
-            vibrate(ctx)
-            resultCard = rec
-            delay(5000)
-            resultCard = null
-        }
-    }
+    // 温度 / 漏电压上限 / 接地电阻上限 / 设备编号 → 组合配置二维码
+    // （用户 2026-09 定：前三项**任意一项**有选择就能出码，没选的项不进二维码）
+    var qrPayload by remember { mutableStateOf<String?>(null) }
+    val pickedPreset = presets.firstOrNull { it.name == tempSel }
+    val vmaxOptions = limits.filter { it.kind == LIMIT_VMAX }.map { it.name }
+    val rmaxOptions = limits.filter { it.kind == LIMIT_RMAX }.map { it.name }
+    val pickedVmax = limits.firstOrNull { it.kind == LIMIT_VMAX && it.name == vmaxSel }
+    val pickedRmax = limits.firstOrNull { it.kind == LIMIT_RMAX && it.name == rmaxSel }
+    // 有设备编号也算「有得配」——厂家的单条指令示例就是一条 SN=…（此时二维码只配编号，不动其他项）
+    val canGenQr = pickedPreset != null || pickedVmax != null || pickedRmax != null ||
+        !snSel.isNullOrBlank()
 
-    Box(Modifier.fillMaxSize()) {
-        BoxWithConstraints(Modifier.fillMaxSize()) {
-            val wide = maxWidth >= 700.dp
-            val logs by controller.logs.collectAsStateWithLifecycle()
-            Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val wide = maxWidth >= 700.dp
+        val compact = maxWidth < 480.dp
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // ── 标题 + 连接状态 + 采集开关 ──
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    if (compact) "192AF+" else "192AF+ 测量系统",
+                    style = if (wide) MaterialTheme.typography.headlineSmall
+                    else MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)          // 标题可压缩，给右边让路
+                )
+                ConnDot(state)
+                Spacer(Modifier.width(8.dp))
+                // 非加权 = 先测量 = 任何屏幕宽度下都完整可见（旧 bug：被状态文字挤到屏幕外）
+                Button(onClick = { controller.setRunning(!state.running) }) {
                     Text(
-                        "191AF+ 测量系统",
-                        style = if (wide) MaterialTheme.typography.headlineMedium
-                        else MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
+                        if (state.running) (if (compact) "■ 停止" else "■ 停止采集")
+                        else (if (compact) "▶ 采集" else "▶ 开始采集")
                     )
-                    IconButton(onClick = openDiag) { Icon(Icons.Default.BugReport, "通信诊断") }
-                    Button(onClick = { controller.setRunning(!state.running) }) {
-                        Text(if (state.running) "■ 停止采集" else "▶ 开始采集")
-                    }
-                }
-
-                ConnBanner(state)
-
-                if (wide) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Column(Modifier.weight(0.58f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            LiveTempCard(state)
-                            SelectRow(lines.map { it.name }, models.map { it.name }, lineSel, modelSel, ::onLine, ::onModel)
-                            InstrumentInfo(state, wide = true)
-                            TestHint()
-                        }
-                        Column(Modifier.weight(0.42f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            LastResultCard(state.lastRecord)
-                            EventLog(logs, openManage)
-                        }
-                    }
-                } else {
-                    LiveTempCard(state)
-                    SelectRow(lines.map { it.name }, models.map { it.name }, lineSel, modelSel, ::onLine, ::onModel)
-                    InstrumentInfo(state, wide = false)
-                    LastResultCard(state.lastRecord)
-                    TestHint()
-                    EventLog(logs, openManage)
                 }
             }
-        }
 
-        resultCard?.let { rec ->
-            ResultOverlay(rec, onDismiss = { resultCard = null })
+            // ── 页面跳转按钮（记录 / 管理 / 配置 / 诊断）──
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                NavButton("记录", Icons.Default.History, openHistory)
+                NavButton("管理", Icons.Default.Article, openManage)
+                NavButton("配置", Icons.Default.Settings, openConfig)
+                NavButton("诊断", Icons.Default.BugReport, openDiag)
+            }
+
+            // ── 线别 / 机种 / 站别（三个平级下拉；窄屏自动折行，不挤压成一条缝）──
+            FlowRow(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val w = if (wide) Modifier.width(230.dp) else Modifier.width(150.dp)
+                SeatSelect("线别", lines.map { it.name }, lineSel, ::onLine, w)
+                SeatSelect("机种", models.map { it.name }, modelSel, ::onModel, w)
+                SeatSelect("站别", stations.map { it.name }, stationSel, ::onStation, w)
+            }
+
+            // ── 温度设置 / 漏电压上限 / 接地电阻上限 / 设备编号 + 组合配置二维码 ──
+            // 与上面的生产信息分开一行：这几项是「配到仪器里」的，性质不同（用户 2026-09 要求）
+            FlowRow(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val w = if (wide) Modifier.width(230.dp) else Modifier.width(150.dp)
+                SeatSelect("温度设置", presets.map { it.name }, tempSel, ::onTemp, w)
+                SeatSelect("漏电压上限", vmaxOptions, vmaxSel, ::onVmax, w)
+                SeatSelect("接地电阻上限", rmaxOptions, rmaxSel, ::onRmax, w)
+                SeatSelect("设备编号", sns.map { it.name }, snSel, ::onSn, w)
+                FilledTonalButton(
+                    onClick = {
+                        qrPayload = QrGen.configPayload(
+                            deviceSn = snSel,
+                            setTemp = pickedPreset?.setTemp,
+                            tolerance = pickedPreset?.tolerance,
+                            vmaxRaw = pickedVmax?.valueRaw,
+                            rmaxRaw = pickedRmax?.valueRaw
+                        )
+                    },
+                    enabled = canGenQr
+                ) {
+                    Icon(Icons.Default.QrCode, null, Modifier.padding(end = 6.dp))
+                    Text(if (canGenQr) "配置二维码" else "先选配置项")
+                }
+            }
+            Text(
+                describeConfig(snSel, pickedPreset, pickedVmax, pickedRmax),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            // ── 主区：当前温度 + 最近结果（大字）──
+            if (wide) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(Modifier.weight(1f)) { CurrentTemp(state) }
+                    Box(Modifier.weight(1f)) { LastResult(state.lastRecord) }
+                }
+            } else {
+                CurrentTemp(state)
+                LastResult(state.lastRecord)
+            }
+
+            InstrumentLine(state)
         }
+    }
+
+    qrPayload?.let { p ->
+        QrDialog(
+            title = "组合配置二维码",
+            payload = p,
+            note = "仪器扫码后自动写入上面这些项，**没选的项不会被改动**。" +
+                "扫完可在本页最下方「仪器状态」核对（设定 / 温度范围 / 电压上限 / 电阻上限）。" +
+                "示例格式：SN=QK-HT-001,TSET=350,TMIN=330,TMAX=370",
+            onDismiss = { qrPayload = null }
+        )
     }
 }
 
-/** 线别/机种两个下拉选择（窄屏下各占一半，weight 分摊不溢出） */
+/**
+ * 组合配置二维码下方的说明 —— 说清「这一张码会把什么配进仪器」。
+ * 一个配置项都没选时说清去哪儿建，而不是干给一个灰按钮。
+ */
+private fun describeConfig(
+    snSel: String?,
+    preset: TempPreset?,
+    vmax: LimitPreset?,
+    rmax: LimitPreset?
+): String {
+    val parts = mutableListOf<String>()
+    preset?.let {
+        parts += "设定 ${it.setTemp}℃（合格区间 ${it.setTemp - it.tolerance}~${it.setTemp + it.tolerance}℃）"
+    }
+    vmax?.let { parts += "漏电压上限 ${it.name}（0x1D 应为 ${it.valueRaw}）" }
+    rmax?.let { parts += "接地电阻上限 ${it.name}（0x1E 应为 ${it.valueRaw}）" }
+    if (!snSel.isNullOrBlank()) parts += "设备编号 $snSel"
+
+    if (parts.isEmpty()) {
+        return "扫码可把「设定温度 / 漏电压上限 / 接地电阻上限 / 设备编号」配到仪器上（选哪项配哪项）。" +
+            "三项都还没建就去「管理」页新增，选好一项这里就能出码。"
+    }
+    return "把二维码给仪器扫：${parts.joinToString("；")}。" +
+        if (snSel.isNullOrBlank()) "未选设备编号 → 二维码不含 SN，仪器上的编号保持不变。" else ""
+}
+
 @Composable
-private fun SelectRow(
-    lines: List<String>, models: List<String>,
-    lineSel: String?, modelSel: String?,
-    onLine: (String?) -> Unit, onModel: (String?) -> Unit
+private fun SeatSelect(
+    label: String,
+    options: List<String>,
+    selected: String?,
+    onSelect: (String?) -> Unit,
+    modifier: Modifier
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-        SearchableSelect(
-            label = "线别", options = lines, selected = lineSel, onSelect = onLine,
-            modifier = Modifier.weight(1f)
-        )
-        SearchableSelect(
-            label = "机种", options = models, selected = modelSel, onSelect = onModel,
-            modifier = Modifier.weight(1f)
-        )
+    SearchableSelect(label = label, options = options, selected = selected, onSelect = onSelect, modifier = modifier)
+}
+
+@Composable
+private fun NavButton(label: String, icon: ImageVector, onClick: () -> Unit) {
+    FilledTonalButton(onClick = onClick) {
+        Icon(icon, null, Modifier.padding(end = 6.dp))
+        Text(label)
     }
 }
 
-/** 连接状态横幅 */
+/**
+ * 连接状态小圆点 + 一行小字。
+ * 宽度**封顶**：长 IP 或长错误信息不会把右边的采集开关挤出屏幕（2026-09 用户反馈的 bug）。
+ */
 @Composable
-private fun ConnBanner(state: MeasureUiState) {
+private fun ConnDot(state: MeasureUiState) {
     val (text, color) = when (val c = state.conn) {
-        is ConnState.Connected -> "已连接 ${c.ip}:${c.port}" to OkGreen
+        is ConnState.Connected -> "${c.ip}:${c.port}" to OkGreen
         is ConnState.Connecting -> "连接中…" to WifiBlue
-        is ConnState.Reconnecting -> "重连中（第 ${c.attempt} 次，${c.delayMs / 1000}s 后重试）" to Color(0xFFEF6C00)
-        is ConnState.Disconnected -> (if (state.running) "未连接（等待仪器 IP）" else "采集已停止") to Color(0xFF757575)
+        is ConnState.Reconnecting -> "重连中（第 ${c.attempt} 次）" to WarnOrange
+        is ConnState.Disconnected -> (if (state.running) "未连接" else "已停止") to InvalidGrey
     }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        StatusChip(text, color)
-        state.lastError?.let { err ->
-            Text("　⚠ $err", color = NgRed, style = MaterialTheme.typography.bodySmall,
-                maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.widthIn(max = 170.dp)
+    ) {
+        Surface(color = color, shape = RoundedCornerShape(50), modifier = Modifier.size(10.dp)) {
+            Box(Modifier.size(10.dp))
         }
+        Text(
+            text,
+            style = MaterialTheme.typography.labelMedium,
+            color = color,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(start = 6.dp)
+        )
     }
 }
 
+/** 当前温度（实时 0x00）：页面第一主角 */
 @Composable
-private fun LiveTempCard(state: MeasureUiState) {
+private fun CurrentTemp(state: MeasureUiState) {
     val snap = state.snapshot
     Card(
         Modifier.fillMaxWidth(),
@@ -211,161 +342,89 @@ private fun LiveTempCard(state: MeasureUiState) {
                 Text(" ℃", fontSize = 30.sp, color = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.padding(bottom = 14.dp, start = 4.dp))
             }
+            // 实时电压/电阻 + 仪器当前测量通道（0x02/0x03/0x04）
+            Text(
+                "通道 ${channelText(snap?.channel)}　电压 ${voltText(snap?.liveVoltageMv)}　" +
+                    "电阻 ${ohmText(snap?.liveResistanceOhm)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
+    }
+}
+
+/** 最近结果：页面第二主角（温度用仪器 0x20 定格值，不是实时值） */
+@Composable
+private fun LastResult(rec: MeasurementRecord?) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("最近结果", style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.weight(1f))
+                if (rec != null) Text(hms(rec.timestampMs), style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (rec == null) {
+                Text("等待仪器保存…", Modifier.padding(top = 16.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 28.sp)
+                Text("（只记录判定为 OK 的测量）", Modifier.padding(top = 4.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                val color = resultColor(rec)
+                Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.Bottom) {
+                    Text(resultLabel(rec), color = color, fontSize = 72.sp,
+                        fontWeight = FontWeight.Black, maxLines = 1)
+                    Text(tempText(rec.measuredTemp), fontSize = 44.sp, fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(start = 18.dp, bottom = 8.dp), maxLines = 1)
+                }
+                Text(
+                    listOfNotNull(
+                        rec.deviceInfo?.ifBlank { null }?.let { "设备 $it" },
+                        rec.lineName.ifBlank { null },
+                        rec.modelName.ifBlank { null },
+                        rec.stationName.ifBlank { null }
+                    ).joinToString(" / ").ifBlank { "未选线别 / 机种 / 站别" },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    "设定 ${intTempText(rec.targetTemp)}　判定范围 ${rangeText(rec.tempLow, rec.tempHigh)}　" +
+                        "电压 ${voltText(rec.measuredVoltageMv)}　电阻 ${ohmText(rec.measuredResistanceOhm)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text("已自动保存 ✓", style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(top = 6.dp))
+            }
         }
     }
 }
 
 /**
- * 仪器信息卡（字段语义为实机实测版）：
- * 设备信息 0x0A~0x19、目标温度 0x1B、温度范围 0x1C~0x1D、漏地电压 0x02、结果保存 0x1E。
+ * 仪器状态一行小字：设备编号(0x0A~0x19) 与判据参数(0x1A~0x1E)。
+ * 采集错误信息也落在这里（原来是挤在标题行右侧，把采集开关挤没了）。
  */
 @Composable
-private fun InstrumentInfo(state: MeasureUiState, wide: Boolean) {
+private fun InstrumentLine(state: MeasureUiState) {
     val s = state.snapshot
-    val info = s?.deviceInfo ?: "--"
-    val target = intTempText(s?.targetTemp)
-    val range = rangeText(s?.tempLow, s?.tempHigh)
-    val leak = leakText(s?.leakageMv)
-    val flag = s?.saveFlagRaw?.let { if (it != 0) "$it（保存中）" else "0（待命）" } ?: "--"
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            InfoItem("设备信息", info)
-            if (wide) {
-                Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
-                    InfoItem("目标温度", target); InfoItem("温度范围", range)
-                    InfoItem("漏地电压", leak); InfoItem("结果保存", flag)
-                }
-            } else {
-                // 手机窄屏：2×2 排布
-                Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) { InfoItem("目标温度", target); InfoItem("温度范围", range) }
-                Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) { InfoItem("漏地电压", leak); InfoItem("结果保存", flag) }
-            }
-        }
-    }
-}
+    val parts = mutableListOf<String>()
+    parts += "设备 ${s?.deviceInfo?.ifBlank { "--" } ?: "--"}"
+    parts += "设定 ${intTempText(s?.targetTemp)}"
+    parts += "温度范围 ${rangeText(s?.tempLow, s?.tempHigh)}"
+    parts += "电压上限 ${voltText(s?.voltageLimitMv)}"
+    parts += "电阻上限 ${ohmText(s?.resistanceLimitOhm)}"
+    if ((s?.uploadFlag ?: 0) != 0) parts += "仪器保存中…"
+    if (state.pendingCount > 0) parts += "待补记 ${state.pendingCount} 笔"
 
-@Composable
-private fun InfoItem(label: String, value: String, modifier: Modifier = Modifier) {
-    Column(modifier) {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
-            maxLines = 1, overflow = TextOverflow.Ellipsis)
-    }
-}
-
-@Composable
-private fun TestHint() {
-    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1))) {
-        Column(Modifier.padding(12.dp)) {
-            Text("操作提示：操作员在仪器上测量并按下「保存」按钮即可，本 App 会自动收取并保存结果，无需再点任何按钮。",
-                style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-}
-
-@Composable
-private fun LastResultCard(rec: MeasurementRecord?) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("最近结果", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                if (rec != null) Text(hms(rec.timestampMs), style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            if (rec == null) {
-                Text("等待仪器保存…", Modifier.padding(top = 10.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 18.sp)
-            } else {
-                val ok = rec.isOk
-                Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        color = if (ok) OkGreen.copy(alpha = 0.15f) else NgRed.copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(if (ok) "✓ OK" else "✕ NG",
-                                color = if (ok) OkGreen else NgRed,
-                                fontSize = 30.sp, fontWeight = FontWeight.Bold)
-                            Spacer(Modifier.width(20.dp))
-                            Text(tempText(rec.measuredTemp), fontSize = 30.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-                Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-                    Text("${rec.lineName} / ${rec.modelName}".ifBlank { "未选线别/机种" })
-                    Text("目标 ${intTempText(rec.targetTemp)}")
-                }
-                Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-                    Text("漏地 ${leakText(rec.leakageMv)}")
-                    Text("已自动保存 ✓")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun EventLog(logs: List<CommLine>, openManage: () -> Unit) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("采集事件", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                FilledTonalButton(onClick = openManage) {
-                    Icon(Icons.Default.Edit, null, Modifier.padding(end = 6.dp)); Text("线别/机种管理")
-                }
-            }
-            // 只展示最近 6 条并完整摊开 —— 外层已是滚动容器，此处不再嵌套滚动
-            val recent = logs.takeLast(6)
-            if (recent.isEmpty()) {
-                Text("暂无事件。开启采集后这里会显示连接与保存记录。",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-            } else {
-                recent.forEach { l ->
-                    val color = when {
-                        l.text.startsWith("★") || l.text.startsWith("✔") -> OkGreen
-                        l.text.startsWith("⚠") || l.text.startsWith("!!") -> NgRed
-                        else -> MaterialTheme.colorScheme.onSurface
-                    }
-                    Text("${hms(l.timeMs)}  ${l.text}", style = MaterialTheme.typography.bodyMedium,
-                        color = color, modifier = Modifier.padding(vertical = 1.dp))
-                }
-            }
-        }
-    }
-}
-
-/** 新结果全屏弹卡：自动消失或点击关闭 */
-@Composable
-private fun ResultOverlay(rec: MeasurementRecord, onDismiss: () -> Unit) {
-    val ok = rec.isOk
-    val color = if (ok) OkGreen else NgRed
-    Surface(
-        modifier = Modifier.fillMaxSize().clickable { onDismiss() },
-        color = color
-    ) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("测试完成", fontSize = 40.sp, color = Color.White, fontWeight = FontWeight.Medium)
-                Text(if (ok) "✓ OK" else "✕ NG", fontSize = 150.sp, color = Color.White, fontWeight = FontWeight.Black,
-                    maxLines = 1)
-                Text(tempText(rec.measuredTemp), fontSize = 90.sp, color = Color.White, fontWeight = FontWeight.Bold,
-                    maxLines = 1)
-                Text("${rec.lineName} / ${rec.modelName}　目标 ${intTempText(rec.targetTemp)}",
-                    fontSize = 26.sp, color = Color.White)
-                Text("已自动保存到记录", fontSize = 26.sp, color = Color.White, modifier = Modifier.padding(top = 14.dp))
-            }
-        }
-    }
-}
-
-private fun vibrate(ctx: Context) {
-    runCatching {
-        val v = ctx.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator ?: return
-        if (android.os.Build.VERSION.SDK_INT >= 26) {
-            v.vibrate(VibrationEffect.createOneShot(250, VibrationEffect.DEFAULT_AMPLITUDE))
-        } else {
-            @Suppress("DEPRECATION") v.vibrate(250)
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            parts.joinToString("　"),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        state.lastError?.let {
+            Text("⚠ $it", style = MaterialTheme.typography.labelSmall, color = WarnOrange)
         }
     }
 }

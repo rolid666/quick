@@ -33,8 +33,15 @@ class ModbusTcpClient(
     private var txCounter = 0
     private val lock = Any()
 
+    /**
+     * ⚠️ `Socket.isConnected` 只表示「曾经连上过」，**对端断开后它仍为 true**，
+     * 所以这里只能用来排除「本地已关闭/半关闭」，**不能**用来判断仪器还在不在线。
+     * 真正发现断线靠读操作抛 IOException/超时（见 MeasurementController.runLoop）。
+     */
     val isConnected: Boolean
-        get() = synchronized(lock) { sock?.let { it.isConnected && !it.isClosed } ?: false }
+        get() = synchronized(lock) {
+            sock?.let { it.isConnected && !it.isClosed && !it.isInputShutdown && !it.isOutputShutdown } ?: false
+        }
 
     fun connect(host: String, port: Int, connectTimeoutMs: Int, soTimeoutMs: Int) {
         synchronized(lock) {
@@ -42,6 +49,9 @@ class ModbusTcpClient(
             val s = Socket()
             s.tcpNoDelay = true
             s.soTimeout = soTimeoutMs
+            // 开着 keepalive：对端（仪器/AP）静默掉线时，由内核探活发现「半开连接」——
+            // 否则只能等下一次请求超时才察觉（表现为「偶发断连」）
+            s.keepAlive = true
             s.connect(InetSocketAddress(host, port), connectTimeoutMs)
             sock = s
             inp = DataInputStream(s.getInputStream())
@@ -59,6 +69,11 @@ class ModbusTcpClient(
     fun readHoldingRegisters(start: Int, quantity: Int, unitId: Int = Registers.DEFAULT_UNIT_ID): IntArray {
         val pdu = byteArrayOf(0x03, start.hi(), start.lo(), quantity.hi(), quantity.lo())
         val body = exchange(pdu, unitId)
+        // 先判长度再取下标：畸形/错配的响应帧曾会在这里抛 ArrayIndexOutOfBoundsException，
+        // 错误信息看不出是通信问题（现在统一成 IOException，控制器按「链路异常」处理）
+        if (body.size < 1 + quantity * 2) {
+            throw IOException("响应过短: ${body.size} 字节（期望 ${1 + quantity * 2}）")
+        }
         val byteCount = body[0].toInt() and 0xFF
         if (byteCount != quantity * 2) throw IOException("响应字节数不符: $byteCount != ${quantity * 2}")
         return IntArray(quantity) { i ->

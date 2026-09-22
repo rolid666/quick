@@ -73,6 +73,16 @@ fun DiagnosticScreen(onBack: () -> Unit) {
 
         Text("连接状态：${connText(state.conn)}", style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
+        // 断线计数：帧日志只有几百行会被刷掉，这里跨整个运行期累计 ——
+        // 「读超时」多 = 链路/仪器侧；「对端关闭」多且每段连接都短 = 被主动踢；「仪器异常应答」多 = 协议层面
+        if (state.dropStats.isNotEmpty()) {
+            Text(
+                "断线统计（自本次启动）：" +
+                    state.dropStats.entries.joinToString("　") { "${it.key} ${it.value} 次" },
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color(0xFFC62828)
+            )
+        }
         Text("日志含完整收发帧（每帧 hex 对应厂家报文格式：事务ID 协议ID 长度 单元ID 功能码 …）",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)

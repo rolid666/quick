@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.quick.app-mergeDebugResources-49:/values-v30/values-v30.xml",
+            "outputFile": "com.quick.app-mergeDebugResources-60:/values-v30/values-v30.xml",
             "map": [
                 {
                     "source": "C:\\Users\\rolid\\.gradle\\caches\\8.9\\transforms\\d96e8864181ff29583df1391b0ce80d0\\transformed\\material3-release\\res\\values-v30\\values-v30.xml",

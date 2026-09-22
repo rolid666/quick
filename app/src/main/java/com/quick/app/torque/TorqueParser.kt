@@ -1,0 +1,188 @@
+package com.quick.app.torque
+
+import java.io.ByteArrayOutputStream
+import java.util.Locale
+
+/**
+ * 扭力计报文解析 —— **格式已于 2026-09-22 实测确认**：`+5.40kgf*cm`。
+ *
+ * 实测环境（用户提供）：串口助手 19200 8N2 无流控，收到的是：
+ * ```
+ * 【RX】  + 5.40 kgf*cm
+ * 【RX】  + 6.23 kgf*cm
+ * ```
+ * 也就是：**带符号的十进制数 + 单位 `kgf*cm`**，2 位小数；串口助手那两处空格是软件排版，
+ * 所以本解析器**符号/数字/单位之间的空白可有可无**，两种写法都认。
+ *
+ * ⚠️ **不要按「一行一笔」解析**：设备**不发换行符**（串口助手是靠「分包间隔 50ms」把每笔切开的），
+ * 而且两块数据有可能被一次 `bulkTransfer` 一起读回来（`+5.40kgf*cm+6.23kgf*cm`）。
+ * 所以这里**扫描整段字节找 `符号+数字+单位`**：
+ * - 一次来 3 笔 → 认 3 笔；
+ * - 被切成两块（`+5.4` | `0kgf*cm`）→ 缓冲拼起来后再认，不漏读；
+ * - 永远不来换行符也不会漏读最后一行（这正是旧的「按行解析」做不到的）。
+ *
+ * 认不出来的字节**不丢**：留在缓冲里由 [pendingBytes] / [pendingText] 如实报告（诊断页显示）。
+ *
+ * ⚠️ 单位**只认不猜**：必须出现单位记号才算一笔读数（`TORQUE METER V1.2 READY` 这类开机横幅
+ * 自然就被挡掉了，不需要额外的「合理性门槛」）。这也意味着**万一设备不发单位，
+ * 一笔都不会被认出来** —— 那时诊断页会看到「解析 0 笔、缓冲里堆着 +5.40」，
+ * 一眼就知道是格式又变了，而不是静默丢数据。
+ */
+data class TorqueReading(
+    val rawLine: String,      // 匹配到的原文（如 `+ 5.40 kgf*cm`）
+    val rawHex: String,       // 这一段原文的原始字节 hex（逐字节可回溯）
+    val value: Double,        // 数值（带符号）
+    val unit: String          // 单位（归一化到 `kgf*cm` 这类规范写法）
+)
+
+/** 串口收到的一块原始字节（诊断页展示用：原始 vs 剥离 FTDI 状态字节后） */
+data class TorqueFrame(
+    val atMs: Long,
+    val rawHex: String,       // 从 endpoint 读到的全部字节（含 FTDI 状态字节）
+    val dataHex: String,      // 剥离 FTDI 状态字节后的有效数据
+    val text: String          // 有效数据的可读形式（不可打印字符转义成 ␍ / ·）
+)
+
+/**
+ * 流式解析器：串口是**分块**到达的，所以必须带缓冲累积 —— 直接对每块跑正则会在块边界上漏读数。
+ *
+ * 只在读循环那一个协程里使用（无并发）。
+ */
+class TorqueStreamParser(private val maxBufferBytes: Int = 512) {
+
+    private val acc = ByteArrayOutputStream()
+
+    /** 因为超过缓冲上限而被丢掉的字节数（诊断页如实显示，绝不装作没发生） */
+    var droppedBytes: Long = 0L
+        private set
+
+    /**
+     * 喂一块数据，返回这次能凑出的所有读数（可能为空）。
+     *
+     * 一次调用里能认出几笔就返回几笔 —— 不许「一块只当一笔」。
+     */
+    fun feed(chunk: ByteArray): List<TorqueReading> {
+        if (chunk.isNotEmpty()) acc.write(chunk, 0, chunk.size)
+        val all = acc.toByteArray()
+        // ISO-8859-1：1 字节 = 1 字符、没有替换字符，**偏移量与字节一一对应**，
+        // 于是匹配出来的下标可以直接拿去切字节（U+FFFD 那种解码会破坏这个对应关系）
+        val text = String(all, Charsets.ISO_8859_1)
+
+        val out = ArrayList<TorqueReading>(2)
+        var consumedTo = -1
+        var from = 0
+        while (true) {
+            val m = READING.find(text, from) ?: break
+            val num = m.groupValues[2].toDoubleOrNull()
+            from = m.range.last + 1
+            if (num == null) continue
+            val value = if (m.groupValues[1] == "-") -num else num
+            out += TorqueReading(
+                rawLine = m.value.trim(),
+                rawHex = hex(all.copyOfRange(m.range.first, m.range.last + 1)),
+                value = value,
+                unit = normalizeUnit(m.groupValues[3])
+            )
+            consumedTo = m.range.last + 1
+        }
+
+        if (consumedTo > 0) {
+            // 已认出来的部分连同紧跟其后的空白/控制字节一起丢掉 ——
+            // CR/LF/空格不能卡在缓冲里，否则「缓冲还剩几个字节」这个指示永远归不了零
+            var start = consumedTo
+            while (start < all.size && isSkippable(all[start])) start++
+            val rest = all.copyOfRange(start, all.size)
+            acc.reset(); acc.write(rest, 0, rest.size)
+        }
+        // 一直认不出来时缓冲不能无限涨（二进制噪声 / 格式又变了）
+        if (acc.size() > maxBufferBytes) {
+            val b = acc.toByteArray()
+            val keep = maxBufferBytes / 2
+            droppedBytes += (b.size - keep).toLong()
+            acc.reset(); acc.write(b, b.size - keep, keep)
+        }
+        return out
+    }
+
+    fun reset() {
+        acc.reset()
+    }
+
+    /** 当前缓冲里挂了多少字节（诊断页显示「没认出来的尾巴」，避免误以为丢数据） */
+    val pendingBytes: Int get() = acc.size()
+
+    /** 缓冲里没认出来的那段（可读化；诊断页显示「到底卡在哪几个字节上」） */
+    fun pendingText(): String = if (acc.size() == 0) "" else printable(acc.toByteArray())
+
+    companion object {
+
+        /**
+         * 读数正则：`(符号)(数字)(单位)`，中间允许任意空白。
+         *
+         * 单位**长的写在前面**（`mN` 必须在 `N` 前面，否则 `12.5 mN*m` 会被从 `N` 处切成 `N*m`），
+         * 分隔符允许 `*` `.` `-` `·` 四种写法（设备实测是 `kgf*cm`，其余是常见变体）。
+         */
+        private const val UNIT_EXPR =
+            "kgf\\s*[-*.·]\\s*cm" + "|" +
+                "mN\\s*[-*.·]\\s*m" + "|" +
+                "cN\\s*[-*.·]\\s*m" + "|" +
+                "N\\s*[-*.·]\\s*m" + "|" +
+                "lbf\\s*[-*.·]\\s*in" + "|" +
+                "ozf\\s*[-*.·]\\s*in"
+
+        private val READING = Regex(
+            "([+-])?\\s*(\\d+(?:\\.\\d+)?)\\s*($UNIT_EXPR)",
+            RegexOption.IGNORE_CASE
+        )
+
+        private fun isSkippable(b: Byte): Boolean {
+            val v = b.toInt() and 0xFF
+            return v == 0x00 || v == 0x09 || v == 0x0A || v == 0x0D || v == 0x20
+        }
+
+        /**
+         * 单位归一化：`kgf.cm` / `kgf-cm` / `KGF*CM` 统一成设备实测的 `kgf*cm` 写法，
+         * 免得同一种单位在库里存出四种字符串（导出与检索都会变得不可靠）。
+         */
+        fun normalizeUnit(raw: String): String {
+            val k = raw.lowercase(Locale.US).replace(Regex("[\\s*.·\\-]"), "")
+            return when (k) {
+                "kgfcm" -> "kgf*cm"
+                "nm" -> "N*m"
+                "cnm" -> "cN*m"
+                "mnm" -> "mN*m"
+                "lbfin" -> "lbf*in"
+                "ozfin" -> "ozf*in"
+                else -> raw.trim()
+            }
+        }
+
+        /** 字节 → 可读文本：可打印 ASCII 原样，其余按转义写（诊断日志要能看出 CR/LF） */
+        fun printable(bytes: ByteArray): String {
+            val sb = StringBuilder(bytes.size)
+            for (b in bytes) {
+                val v = b.toInt() and 0xFF
+                when {
+                    v == 0x0D -> sb.append("\\r")
+                    v == 0x0A -> sb.append("\\n")
+                    v == 0x09 -> sb.append("\\t")
+                    v in 0x20..0x7E -> sb.append(v.toChar())
+                    else -> sb.append(String.format(Locale.US, "\\x%02X", v))
+                }
+            }
+            return if (sb.length > MAX_TEXT) sb.substring(0, MAX_TEXT) + "…" else sb.toString()
+        }
+
+        fun hex(bytes: ByteArray): String {
+            val sb = StringBuilder(bytes.size * 3)
+            for ((i, b) in bytes.withIndex()) {
+                if (i > 0) sb.append(' ')
+                sb.append(String.format(Locale.US, "%02X", b.toInt() and 0xFF))
+            }
+            return if (sb.length > MAX_TEXT * 3) sb.substring(0, MAX_TEXT * 3) + " …" else sb.toString()
+        }
+
+        /** 一段文本最多显示这么长（超过的都是噪声，也没人看得完） */
+        private const val MAX_TEXT = 400
+    }
+}
