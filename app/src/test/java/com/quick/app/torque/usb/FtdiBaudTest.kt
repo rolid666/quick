@@ -93,8 +93,63 @@ class FtdiBaudTest {
     }
 
     @Test
-    fun `8N2 的 wValue = 0x0208`() {
-        // 8 数据位 | 2 停止位 << 8 | 无校验 << 11
-        assertEquals(0x0208, FtdiSerialPort.DATA_8N2)
+    fun `两个 64 字节整包 —— 第二包开头的 01 60 也要剥掉`() {
+        // 这条守的是「按包长步进」这个写法本身（与 usb-serial-for-android 的 readFilter 逐句等价）。
+        // 注意：一次 bulkTransfer 要装下两个整包，读缓冲必须大于一个包长；
+        // 本驱动现在只读 packetSize（=64），走不到这条路径 —— 所以这是**保险**，不是修 bug。
+        val a = ByteArray(62) { 0x41 }        // 'A'
+        val b = ByteArray(62) { 0x42 }        // 'B'
+        val two = byteArrayOf(0x01, 0x60) + a + byteArrayOf(0x01, 0x60) + b
+        assertEquals(128, two.size)
+
+        val data = FtdiSerialPort.stripStatusBytes(two)
+        assertEquals(124, data.size)
+        assertEquals('A'.code, data[0].toInt())
+        assertEquals('A'.code, data[61].toInt())
+        assertEquals("第二包的数据要紧接着第一包，中间不能夹 01 60", 'B'.code, data[62].toInt())
+        assertEquals('B'.code, data[123].toInt())
+        assertFalse("结果里不该再出现状态字节", data.any { it == 0x01.toByte() || it == 0x60.toByte() })
+    }
+
+    @Test
+    fun `按连接自己的包长剥（不是写死 64）`() {
+        // 纯算术检查：换包长时边界要跟着走
+        val p = byteArrayOf(0x01, 0x60) + ByteArray(14) { 0x44 }   // 'D'
+        val three = p + p + p
+        assertEquals(48, three.size)
+
+        assertEquals(42, FtdiSerialPort.stripStatusBytes(three, packetSize = 16).size)
+        assertTrue(FtdiSerialPort.stripStatusBytes(three, packetSize = 16).all { it == 0x44.toByte() })
+        // 包长给错（当成 64）时只剥掉开头 2 字节 —— 这条断言固定「包长必须给对」这件事
+        assertEquals(46, FtdiSerialPort.stripStatusBytes(three, packetSize = 64).size)
+    }
+
+    @Test
+    fun `包长给成 0 或负数 —— 退回 64，不能死循环`() {
+        val a = ByteArray(62) { 0x41 }
+        val two = byteArrayOf(0x01, 0x60) + a + byteArrayOf(0x01, 0x60) + a
+        assertEquals(124, FtdiSerialPort.stripStatusBytes(two, packetSize = 0).size)
+        assertEquals(124, FtdiSerialPort.stripStatusBytes(two, packetSize = -8).size)
+    }
+
+    @Test
+    fun `尾包不足 2 字节的余量 —— 跳过，不当数据（库在这里会抛异常，我们选择跳过）`() {
+        // bulkTransfer 正常返回整包，这个余量只可能出现在异常截断时；
+        // 不足 2 字节就不可能是「数据」，丢掉比当成数据安全
+        val a = ByteArray(62) { 0x41 }
+        val tail = byteArrayOf(0x01, 0x60) + a + byteArrayOf(0x77)
+        assertEquals(62, FtdiSerialPort.stripStatusBytes(tail).size)
+    }
+
+    @Test
+    fun `8N2 的 wValue = 0x1008`() {
+        // 位域：0–7 数据位（8）| 8–10 校验（0=无）| 11–13 停止位（2=两位）
+        // ⚠ 2026-09-23 修：之前写的是 8 or (2 shl 8) = 0x0208 —— 停止位放错到校验位，
+        // 实际配成了「8 数据位 + 偶校验 + 1 停止位」。这个测试当时把错的固定成「正确」了。
+        // 依据：FTDI 的 SET_DATA_REQUEST 位域，以及 usb-serial-for-android 的
+        // setParameters()：无校验不加位、奇 0x100 / 偶 0x200、两位停止位 |= 0x1000。
+        assertEquals(2 shl 11, FtdiSerialPort.DATA_8N2 and (7 shl 11))
+        assertEquals(0, FtdiSerialPort.DATA_8N2 and (7 shl 8))
+        assertEquals(0x1008, FtdiSerialPort.DATA_8N2)
     }
 }

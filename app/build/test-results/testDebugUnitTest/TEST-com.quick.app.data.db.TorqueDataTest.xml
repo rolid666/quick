@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.quick.app.data.db.TorqueDataTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-09-22T13:50:12" hostname="DESKTOP-T2R0P5R" time="0.003">
+<testsuite name="com.quick.app.data.db.TorqueDataTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-09-25T14:37:02" hostname="DESKTOP-T2R0P5R" time="0.003">
   <properties/>
   <testcase name="旧数据没有判定时 isOk 为 null" classname="com.quick.app.data.db.TorqueDataTest" time="0.001"/>
   <testcase name="字典类别的中文名齐全" classname="com.quick.app.data.db.TorqueDataTest" time="0.0"/>
@@ -9,7 +9,7 @@
   <testcase name="记录的显示文本与判定" classname="com.quick.app.data.db.TorqueDataTest" time="0.0"/>
   <testcase name="超出范围判 NG" classname="com.quick.app.data.db.TorqueDataTest" time="0.0"/>
   <testcase name="缺任何一个值都不判定 不编造" classname="com.quick.app.data.db.TorqueDataTest" time="0.0"/>
-  <testcase name="空值显示两个短横 不显示 0" classname="com.quick.app.data.db.TorqueDataTest" time="0.0"/>
+  <testcase name="空值显示两个短横 不显示 0" classname="com.quick.app.data.db.TorqueDataTest" time="0.001"/>
   <testcase name="数值固定两位小数" classname="com.quick.app.data.db.TorqueDataTest" time="0.0"/>
   <testcase name="单位常量与设备实测一致" classname="com.quick.app.data.db.TorqueDataTest" time="0.0"/>
   <testcase name="同样的两个数永远生成同一个名字" classname="com.quick.app.data.db.TorqueDataTest" time="0.0"/>

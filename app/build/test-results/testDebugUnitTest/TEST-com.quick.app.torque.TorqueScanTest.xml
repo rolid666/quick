@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.quick.app.torque.TorqueScanTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-22T13:50:13" hostname="DESKTOP-T2R0P5R" time="0.001">
+<testsuite name="com.quick.app.torque.TorqueScanTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-25T14:37:03" hostname="DESKTOP-T2R0P5R" time="0.001">
   <properties/>
   <testcase name="空内容不新增（返回 null，调用方据此什么都不做）" classname="com.quick.app.torque.TorqueScanTest" time="0.0"/>
   <testcase name="SN 在串尾（后面没有逗号）—— 取到结尾" classname="com.quick.app.torque.TorqueScanTest" time="0.0"/>
-  <testcase name="超长内容截断 —— 不让一个乱码二维码撑爆字典" classname="com.quick.app.torque.TorqueScanTest" time="0.0"/>
+  <testcase name="超长内容截断 —— 不让一个乱码二维码撑爆字典" classname="com.quick.app.torque.TorqueScanTest" time="0.001"/>
   <testcase name="没有 SN —— 整串就是名字" classname="com.quick.app.torque.TorqueScanTest" time="0.0"/>
-  <testcase name="扫到本应用自己的复合配置码 —— 只取 SN 的值" classname="com.quick.app.torque.TorqueScanTest" time="0.001"/>
+  <testcase name="扫到本应用自己的复合配置码 —— 只取 SN 的值" classname="com.quick.app.torque.TorqueScanTest" time="0.0"/>
   <testcase name="大小写不敏感 —— 现场贴的标签什么写法都有" classname="com.quick.app.torque.TorqueScanTest" time="0.0"/>
   <testcase name="SN 写在中间也能取到，且到下一个逗号为止" classname="com.quick.app.torque.TorqueScanTest" time="0.0"/>
   <testcase name="换行与连续空格折成一个空格 —— 名字里不能带控制字符" classname="com.quick.app.torque.TorqueScanTest" time="0.0"/>

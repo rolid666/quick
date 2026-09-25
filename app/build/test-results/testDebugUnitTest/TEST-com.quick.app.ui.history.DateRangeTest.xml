@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.quick.app.ui.history.DateRangeTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-22T13:50:13" hostname="DESKTOP-T2R0P5R" time="0.007">
+<testsuite name="com.quick.app.ui.history.DateRangeTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-25T14:37:03" hostname="DESKTOP-T2R0P5R" time="0.007">
   <properties/>
-  <testcase name="截止日期含当天最后一毫秒" classname="com.quick.app.ui.history.DateRangeTest" time="0.005"/>
+  <testcase name="截止日期含当天最后一毫秒" classname="com.quick.app.ui.history.DateRangeTest" time="0.006"/>
   <testcase name="不换算就会偏移 8 小时 —— 回归防线" classname="com.quick.app.ui.history.DateRangeTest" time="0.0"/>
-  <testcase name="本机当天0点 转成 DatePicker 需要的 UTC 当天0点" classname="com.quick.app.ui.history.DateRangeTest" time="0.001"/>
+  <testcase name="本机当天0点 转成 DatePicker 需要的 UTC 当天0点" classname="com.quick.app.ui.history.DateRangeTest" time="0.0"/>
   <testcase name="相邻两天不互相越界" classname="com.quick.app.ui.history.DateRangeTest" time="0.0"/>
   <testcase name="往返换算稳定" classname="com.quick.app.ui.history.DateRangeTest" time="0.0"/>
   <testcase name="DatePicker 返回的 UTC 当天0点 转回本机当天0点" classname="com.quick.app.ui.history.DateRangeTest" time="0.0"/>
-  <testcase name="选中当天凌晨3点的记录落在区间内" classname="com.quick.app.ui.history.DateRangeTest" time="0.001"/>
+  <testcase name="选中当天凌晨3点的记录落在区间内" classname="com.quick.app.ui.history.DateRangeTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

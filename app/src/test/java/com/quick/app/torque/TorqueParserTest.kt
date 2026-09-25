@@ -1,5 +1,6 @@
 package com.quick.app.torque
 
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -148,9 +149,96 @@ class TorqueParserTest {
     }
 
     @Test
+    fun `坏字节严格解码要返回 null —— 不能靠替换字符装作解开了`() {
+        // 0xE4 是 3 字节序列的开头，后面缺两个续字节 → 非法
+        assertEquals(null, TorqueStreamParser.utf8OrNull(byteArrayOf(0xE4.toByte())))
+        // 0xFF 在 UTF-8 里永远非法
+        assertEquals(null, TorqueStreamParser.utf8OrNull(byteArrayOf(0xFF.toByte(), 0x20, 0x41)))
+        assertEquals(null, TorqueStreamParser.droppedTextOrNull(byteArrayOf(0xE4.toByte())))
+        // 纯 ASCII 的噪声能解通，但不该被当成「设备在发文字」
+        assertEquals(null, TorqueStreamParser.droppedTextOrNull(byteArrayOf(0x01, 0x7F)))
+    }
+
+    @Test
     fun `不是读数的数字串不会被误认`() {
         // 没有单位 → 一笔都不认（诊断页会看到缓冲堆着这几个字节，一眼知道格式变了）
         assertEquals(0, feed("12345").size)
         assertTrue(p.pendingBytes > 0)
+    }
+
+    // ---------- 协议字符白名单（用户 2026-09-25 定：只留 + 5.40 kgf*cm 这类读数）----------
+
+    /** 现场那串：读数后面跟着 `\x18 \x0E \x0F`（用户 2026-09-25 反馈的原始现象） */
+    private fun wireWithNoise(): ByteArray =
+        "+ 5.40 kgf*cm".toByteArray(Charsets.ISO_8859_1) + byteArrayOf(0x18, 0x0E, 0x0F)
+
+    @Test
+    fun `白名单只留协议字符 —— 18 0E 0F 这类噪声一个都不放进去`() {
+        val wire = wireWithNoise()
+        val clean = TorqueStreamParser.keepProtocol(wire)
+        assertEquals("+ 5.40 kgf*cm", String(clean, Charsets.ISO_8859_1))
+        assertEquals(3, wire.size - clean.size)
+        // 滤掉的字节要能单独拿出来（诊断页显示「滤了什么」靠它）
+        assertArrayEquals(byteArrayOf(0x18, 0x0E, 0x0F), TorqueStreamParser.notProtocol(wire))
+        assertEquals(null, TorqueStreamParser.droppedTextOrNull(wire))
+    }
+
+    @Test
+    fun `噪声夹在读数中间 —— 滤掉之后照样认得出 不过滤就整笔丢掉`() {
+        val ks = "+ 5.40 k".toByteArray(Charsets.ISO_8859_1)
+        val gfcm = "gf*cm".toByteArray(Charsets.ISO_8859_1)
+        val wire = ks + byteArrayOf(0x18, 0x0E, 0x0F) + gfcm
+
+        // 对照：不过滤的话 `k\x18\x0E\x0Fgf` 把单位切碎了，整笔读数认不出来、还堆在缓冲里
+        val raw = TorqueStreamParser()
+        assertEquals(0, raw.feed(wire).size)
+        assertTrue(raw.pendingBytes > 0)
+
+        // 过滤后：读数认得出，缓冲不残留
+        val rs = p.feed(TorqueStreamParser.keepProtocol(wire))
+        assertEquals(1, rs.size)
+        assertEquals(5.40, rs[0].value, 1e-9)
+        assertEquals(0, p.pendingBytes)
+    }
+
+    @Test
+    fun `换行符在白名单里 —— 设备真发 CRLF 也不会被当成噪声滤掉`() {
+        val wire = "+5.40kgf*cm\r\n".toByteArray(Charsets.ISO_8859_1) + byteArrayOf(0x18)
+        assertEquals("+5.40kgf*cm\r\n",
+            String(TorqueStreamParser.keepProtocol(wire), Charsets.ISO_8859_1))
+    }
+
+    @Test
+    fun `中间点 · 在白名单里 —— kgf·cm 这种写法不能因为过滤而失配`() {
+        // ISO-8859-1 的 ·（0xB7）：必须留着，否则一种本来认得的单位写法突然失配
+        assertEquals("+5.40kgf·cm",
+            String(TorqueStreamParser.keepProtocol("+5.40kgf·cm".toByteArray(Charsets.ISO_8859_1)),
+                Charsets.ISO_8859_1))
+        val rs = p.feed(TorqueStreamParser.keepProtocol("+5.40kgf·cm".toByteArray(Charsets.ISO_8859_1)))
+        assertEquals(1, rs.size)
+        assertEquals("kgf*cm", rs[0].unit)
+        // 设备若发 UTF-8 的 ·（C2 B7）：C2 被当噪声滤掉、B7 留下 —— 反而认得出来
+        val utf8 = TorqueStreamParser.keepProtocol("+5.40kgf·cm".toByteArray(Charsets.UTF_8))
+        assertEquals(1, p.feed(utf8).size)
+    }
+
+    @Test
+    fun `整包都是噪声 —— 过滤后为空 解析器什么也拿不到`() {
+        val wire = byteArrayOf(0x18, 0x0E, 0x0F, 0x00, 0xFF.toByte())
+        val clean = TorqueStreamParser.keepProtocol(wire)
+        assertEquals(0, clean.size)
+        assertEquals(0, p.feed(clean).size)
+        assertEquals(0, p.pendingBytes)
+        assertEquals(5, wire.size - clean.size)
+    }
+
+    @Test
+    fun `滤掉的字节若能严格解成文字 说明设备换了说法 不是链路噪声`() {
+        val cn = "扭力值".toByteArray(Charsets.UTF_8)
+        assertEquals("设备发的合法 UTF-8 要能解出来", "扭力值", TorqueStreamParser.utf8OrNull(cn))
+        assertTrue(TorqueStreamParser.hasNonAscii("扭力值"))
+        // 读数后面跟着一句中文 → 滤掉的正是这句话，诊断页要把它显出来（别把「设备说话」当「线路坏」）
+        val wire = "+5.40kgf*cm".toByteArray(Charsets.ISO_8859_1) + cn
+        assertEquals("扭力值", TorqueStreamParser.droppedTextOrNull(wire))
     }
 }

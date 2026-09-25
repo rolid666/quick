@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.quick.app.collect.SaveTriggerTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-09-22T13:50:12" hostname="DESKTOP-T2R0P5R" time="0.005">
+<testsuite name="com.quick.app.collect.SaveTriggerTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-09-25T14:37:02" hostname="DESKTOP-T2R0P5R" time="0.005">
   <properties/>
   <testcase name="重连后重建基线 —— 不把重连前那笔重复记一次" classname="com.quick.app.collect.SaveTriggerTest" time="0.003"/>
   <testcase name="读晚了（标志已自清但内容变了）—— 补收" classname="com.quick.app.collect.SaveTriggerTest" time="0.0"/>

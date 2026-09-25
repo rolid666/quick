@@ -1,22 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.quick.app.torque.TorqueParserTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-09-22T13:50:12" hostname="DESKTOP-T2R0P5R" time="0.035">
+<testsuite name="com.quick.app.torque.TorqueParserTest" tests="23" skipped="0" failures="0" errors="0" timestamp="2026-09-25T14:37:02" hostname="DESKTOP-T2R0P5R" time="0.038">
   <properties/>
   <testcase name="实测格式 一笔就是一串 ASCII" classname="com.quick.app.torque.TorqueParserTest" time="0.024"/>
   <testcase name="开机横幅不会被当成读数 并且留在缓冲里如实报告" classname="com.quick.app.torque.TorqueParserTest" time="0.0"/>
-  <testcase name="横幅后面跟的读数照样能认出来" classname="com.quick.app.torque.TorqueParserTest" time="0.001"/>
-  <testcase name="缓冲超过上限时丢最旧的一半并如实计数" classname="com.quick.app.torque.TorqueParserTest" time="0.0"/>
-  <testcase name="没有换行符也能解析 且不丢最后一笔" classname="com.quick.app.torque.TorqueParserTest" time="0.001"/>
-  <testcase name="负值带符号" classname="com.quick.app.torque.TorqueParserTest" time="0.0"/>
+  <testcase name="中间点 · 在白名单里 —— kgf·cm 这种写法不能因为过滤而失配" classname="com.quick.app.torque.TorqueParserTest" time="0.001"/>
+  <testcase name="横幅后面跟的读数照样能认出来" classname="com.quick.app.torque.TorqueParserTest" time="0.0"/>
+  <testcase name="缓冲超过上限时丢最旧的一半并如实计数" classname="com.quick.app.torque.TorqueParserTest" time="0.001"/>
+  <testcase name="没有换行符也能解析 且不丢最后一笔" classname="com.quick.app.torque.TorqueParserTest" time="0.0"/>
+  <testcase name="白名单只留协议字符 —— 18 0E 0F 这类噪声一个都不放进去" classname="com.quick.app.torque.TorqueParserTest" time="0.001"/>
+  <testcase name="负值带符号" classname="com.quick.app.torque.TorqueParserTest" time="0.001"/>
   <testcase name="reset 清空缓冲 旧残留不会串到新数据上" classname="com.quick.app.torque.TorqueParserTest" time="0.0"/>
+  <testcase name="换行符在白名单里 —— 设备真发 CRLF 也不会被当成噪声滤掉" classname="com.quick.app.torque.TorqueParserTest" time="0.0"/>
   <testcase name="原始字节 hex 与原文一一对应" classname="com.quick.app.torque.TorqueParserTest" time="0.001"/>
   <testcase name="串口助手里那种带空格的写法也认" classname="com.quick.app.torque.TorqueParserTest" time="0.0"/>
-  <testcase name="一次读到两笔 要认出两笔" classname="com.quick.app.torque.TorqueParserTest" time="0.001"/>
+  <testcase name="一次读到两笔 要认出两笔" classname="com.quick.app.torque.TorqueParserTest" time="0.0"/>
+  <testcase name="整包都是噪声 —— 过滤后为空 解析器什么也拿不到" classname="com.quick.app.torque.TorqueParserTest" time="0.0"/>
   <testcase name="N m 与 mN m 不会互相切错" classname="com.quick.app.torque.TorqueParserTest" time="0.0"/>
   <testcase name="单位写法变体归一化" classname="com.quick.app.torque.TorqueParserTest" time="0.0"/>
+  <testcase name="噪声夹在读数中间 —— 滤掉之后照样认得出 不过滤就整笔丢掉" classname="com.quick.app.torque.TorqueParserTest" time="0.001"/>
+  <testcase name="滤掉的字节若能严格解成文字 说明设备换了说法 不是链路噪声" classname="com.quick.app.torque.TorqueParserTest" time="0.0"/>
   <testcase name="CRLF 分割的连续三笔" classname="com.quick.app.torque.TorqueParserTest" time="0.005"/>
   <testcase name="不是读数的数字串不会被误认" classname="com.quick.app.torque.TorqueParserTest" time="0.0"/>
-  <testcase name="一笔被切成两个包 拼起来后才认" classname="com.quick.app.torque.TorqueParserTest" time="0.001"/>
-  <testcase name="printable 把控制字符转义出来" classname="com.quick.app.torque.TorqueParserTest" time="0.0"/>
+  <testcase name="一笔被切成两个包 拼起来后才认" classname="com.quick.app.torque.TorqueParserTest" time="0.0"/>
+  <testcase name="printable 把控制字符转义出来" classname="com.quick.app.torque.TorqueParserTest" time="0.001"/>
+  <testcase name="坏字节严格解码要返回 null —— 不能靠替换字符装作解开了" classname="com.quick.app.torque.TorqueParserTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

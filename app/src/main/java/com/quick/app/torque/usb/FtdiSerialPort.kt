@@ -23,19 +23,24 @@ import java.util.Locale
  * | SetModemCtrl | 0x01 | 0x0303 = DTR+RTS 有效 | 有些仪器不拉 DTR/RTS 就不发数据 |
  * | SetFlowCtrl  | 0x02 | 0x0000 无流控 | 手册未提流控 → 关 |
  * | SetBaudRate  | 0x03 | 分频值（低 16 位）/ wIndex = 高 16 位 | 见 [FtdiBaud] |
- * | SetDataBits  | 0x04 | 0x0208 = 8 数据位 + **2 停止位** + 无校验 | 手册：1+8+2 无校验 |
+ * | SetDataBits  | 0x04 | **0x1008** = 8 数据位 + 2 停止位 + 无校验 | 手册：1+8+2 无校验 |
  * | SetLatency   | 0x09 | 毫秒（1~255） | 取 1ms：数据一到就上送，不用等满 16ms |
  * | SetBitMode   | 0x0B | 0x0000 = 复位为普通 UART | 仅 H/D 系列需要 |
  *
  * **读到的每个 USB 包开头有 2 个 modem 状态字节**（FTDI 固定行为：一个包 = 2 状态 + 最多 62 数据），
  * 解析前必须剥掉，否则每隔 62 字节就会混进 0x01 0x60 两个垃圾字节 ——
  * 这正是「自己写驱动」最容易踩且最难查的坑，[stripStatusBytes] 单测覆盖。
+ *
+ * 怎么剥见 [stripStatusBytes]：与成熟库 usb-serial-for-android 的 `FtdiSerialDriver.readFilter()`
+ * **逐句等价**（2026-09-24 取到该库源码核对过，见 docs §26，那里也写清了「按包长步进」在什么情况下才有意义）。
+ *
+ * 芯片已于 2026-09-23 真机确认是 **FT232R（PID 6001）**：3 MHz 分频、64 字节包，与 [FtdiBaud] 的假设一致。
  */
 class FtdiSerialPort private constructor(
     private val conn: UsbDeviceConnection,
     private val iface: UsbInterface,
     private val epIn: UsbEndpoint,
-    private val packetSize: Int,
+    val packetSize: Int,
     val chipName: String,
     val baud: Int
 ) {
@@ -43,6 +48,9 @@ class FtdiSerialPort private constructor(
     @Volatile private var open = true
 
     val isOpen: Boolean get() = open
+
+    /** 剥掉本机包长下每个 USB 包开头的 2 个状态字节（读循环每包调一次） */
+    fun stripStatus(raw: ByteArray): ByteArray = stripStatusBytes(raw, packetSize)
 
     /** 一行诊断说明（诊断页/测量页显示「现在连的是什么」） */
     fun describe(): String =
@@ -114,8 +122,24 @@ class FtdiSerialPort private constructor(
         private const val CTRL_TIMEOUT_MS = 1000
         private const val LATENCY_MS = 1
 
-        /** wValue：数据位 8 | 停止位 2 << 8 | 校验 0 << 11（手册：8N2 无校验） */
-        const val DATA_8N2 = 8 or (2 shl 8)
+        /**
+         * `SET_DATA_REQUEST`(0x04) 的 wValue —— FTDI 的位域（FT232/FT245 Device API 与 libftdi 一致）：
+         *
+         * | 位 | 含义 |
+         * |---|---|
+         * | 0–7 | 数据位（5/6/7/8） |
+         * | 8–10 | 校验（0=无 1=奇 2=偶 3=Mark 4=Space） |
+         * | **11–13** | **停止位（0=1 位、1=1.5 位、2=2 位）** |
+         * | 14 | 发送 break |
+         * | 15 | 保留 |
+         *
+         * 所以手册的「1 起始位 + 8 数据位 + 2 停止位 + 无校验」= `8 or (2 shl 11)` = **0x1008**。
+         *
+         * ⚠️ **2026-09-23 修**：原先写的是 `8 or (2 shl 8)` = 0x0208 —— 停止位放错了位域，
+         * 落在**校验位**上，实际把芯片配成了「**8 数据位 + 偶校验 + 1 停止位**」，
+         * 而设备发的是无校验。成熟库 usb-serial-for-android 用的就是 0x1008（`config |= 0x1000`）。
+         */
+        const val DATA_8N2 = 8 or (2 shl 11)
 
         private val EMPTY = ByteArray(0)
 
@@ -146,7 +170,7 @@ class FtdiSerialPort private constructor(
                 runCatching { conn.close() }
                 return null
             }
-            // 一个 USB 包 = 2 状态字节 + 数据，所以按端点包长读、读回来就剥前 2 字节
+            // 按端点包长读：剥状态字节要靠这个长度才能对上包边界（见 stripStatusBytes）
             val size = if (epIn.maxPacketSize >= 64) epIn.maxPacketSize else 64
             return FtdiSerialPort(
                 conn, iface, epIn, size,
@@ -156,10 +180,39 @@ class FtdiSerialPort private constructor(
         }
 
         /**
-         * 剥掉 FTDI 每个包开头的 2 个 modem 状态字节（0x01 + 状态位）。
-         * 包长 ≤2 时说明这一包只有状态、没有数据 → 返回空。
+         * 剥掉 FTDI 每个包开头的 2 个 modem 状态字节（`01` + 状态位，实测是 `01 60`）。
+         *
+         * 按 [packetSize] 步进逐包剥 —— 与 usb-serial-for-android 的
+         * `FtdiSerialDriver.readFilter()` 逐句等价（`srcPos += maxPacketSize`，每处留 2 字节头），
+         * 那条 `while (nread == READ_HEADER_LENGTH)` 的读循环也印证了「只有状态的 2 字节包」是真实存在的。
+         *
+         * ⚠️ **说清适用边界，别把这条当成「修了乱码」**（2026-09-24）：本驱动的读缓冲正好是
+         * **一个包长**（[readPacket] 只请求 `packetSize` 字节），而 USB 短包会立刻结束一次
+         * `bulkTransfer`，所以一次读最多只装得下**一个**包 —— 这种情况下「只剥前 2 字节」和
+         * 「按包长步进」结果完全相同。步进写法在这里是**保险**：缓冲一旦被加大（比如以后
+         * 一次读 512 字节），一次读就会装进多个 64 字节整包，那时只有步进才对。
+         * 反过来说：「数据中间有乱码」**不是**这段代码造成的，别再从这儿找原因（docs §26）。
+         *
+         * 某个包剩下的不足 2 字节 = 这一包只有状态、没有数据 → 跳过，后面的照剥；
+         * 整段 ≤2 字节则返回空。库在这里是抛 `IOException("Expected at least 2 bytes")`，
+         * 我们选择**跳过**：现场宁可少 2 字节，也不能因为一个畸形包把整条链路判成断开。
          */
-        fun stripStatusBytes(packet: ByteArray): ByteArray =
-            if (packet.size <= 2) EMPTY else packet.copyOfRange(2, packet.size)
+        fun stripStatusBytes(bytes: ByteArray, packetSize: Int = 64): ByteArray {
+            if (bytes.size <= 2) return EMPTY
+            val step = if (packetSize > 2) packetSize else 64
+            val out = ByteArray(bytes.size)
+            var dest = 0
+            var src = 0
+            while (src < bytes.size) {
+                val end = (src + step).coerceAtMost(bytes.size)
+                val len = end - src - 2            // 这个包的数据部分（可能为 0：只有状态）
+                if (len > 0) {
+                    System.arraycopy(bytes, src + 2, out, dest, len)
+                    dest += len
+                }
+                src += step
+            }
+            return out.copyOf(dest)
+        }
     }
 }

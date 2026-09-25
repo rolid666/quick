@@ -89,6 +89,8 @@ data class TorqueUiState(
     val pendingBytes: Int = 0,
     /** 缓冲里那段没认出来的内容（可读化） */
     val pendingText: String = "",
+    /** 被白名单滤掉的噪声字节**累计**多少（诊断页显示：>0 说明链路上有非协议字节，别静默） */
+    val noiseTotal: Long = 0,
     /** 因为超过缓冲上限被丢掉的字节（诊断页显示，不装作没发生） */
     val droppedBytes: Long = 0
 )
@@ -372,20 +374,30 @@ class TorqueController(private val app: Application, val db: AppDatabase) {
                 continue
             }
             emptyStreak = 0
-            val data = FtdiSerialPort.stripStatusBytes(raw)
+            // 用连接自己的包长剥（不是默认 64）——换个非 FT232R 的芯片时端点包长可能不同
+            val data = port.stripStatus(raw)
             if (data.isEmpty()) continue
+            // 白名单过滤（2026-09-25 用户定）：只把协议允许的字符送进解析器，
+            // \x18 \x0E \x0F 这类噪声在这里就丢掉，读数 `+ 5.40 kgf*cm` 原样留下。
+            // 丢了多少**如实计数**（帧上 + 累计），绝不静默 —— 真丢多了说明链路还有问题。
+            val clean = TorqueStreamParser.keepProtocol(data)
+            val noiseBytes = data.size - clean.size
             // 先喂解析器再更新界面：这样诊断页显示的「缓冲残留 / 丢字节数」是同一次读取后的真实值
-            val readings = parser.feed(data)
+            val readings = parser.feed(clean)
             val frame = TorqueFrame(
                 atMs = System.currentTimeMillis(),
+                // 原始 hex 与「剥状态后、滤噪声前」的 hex 都留着 —— 诊断页靠它回看设备到底发了什么
                 rawHex = TorqueStreamParser.hex(raw),
                 dataHex = TorqueStreamParser.hex(data),
-                text = TorqueStreamParser.printable(data)
+                text = TorqueStreamParser.printable(clean),
+                noiseBytes = noiseBytes,
+                noiseUtf8 = if (noiseBytes > 0) TorqueStreamParser.droppedTextOrNull(data) else null
             )
             _ui.update {
                 it.copy(
                     frames = (it.frames + frame).takeLast(MAX_FRAMES),
                     byteCount = it.byteCount + data.size,
+                    noiseTotal = it.noiseTotal + noiseBytes,
                     pendingBytes = parser.pendingBytes,
                     pendingText = parser.pendingText(),
                     droppedBytes = parser.droppedBytes
@@ -601,7 +613,7 @@ class TorqueController(private val app: Application, val db: AppDatabase) {
         parser.reset()
         _ui.update {
             it.copy(
-                frames = emptyList(), byteCount = 0, readingCount = 0,
+                frames = emptyList(), byteCount = 0, readingCount = 0, noiseTotal = 0,
                 droppedBytes = 0, pendingBytes = 0, pendingText = ""
             )
         }

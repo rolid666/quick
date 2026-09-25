@@ -115,6 +115,7 @@ fun TorqueDiagScreen(onBack: () -> Unit) {
         // 解析缓冲：没认出来的尾巴如实显示 —— 格式又变了的话，这里会堆着几十字节
         Text(
             "解析缓冲 ${state.pendingBytes} 字节" +
+                (if (state.noiseTotal > 0L) "　已滤除噪声 ${state.noiseTotal} 字节" else "") +
                 (if (state.droppedBytes > 0L) "　⚠ 已丢弃 ${state.droppedBytes} 字节（超过缓冲上限）" else "") +
                 (if (state.lastReading != null) "　最近解析：${state.lastReading?.rawLine}" else ""),
             style = MaterialTheme.typography.labelMedium,
@@ -220,18 +221,50 @@ fun TorqueDiagScreen(onBack: () -> Unit) {
         }
 
         if (showFrames) {
+            // 一帧 = 一次 bulkTransfer = 一个 USB 包，所以 rawHex 的前 2 字节就是 FTDI 的状态头。
+            // 数一遍各状态值出现多少次：全都一样 → 链路安静；出现好几种 → 芯片在报线路状态变化。
+            val statusTally = remember(state.frames) {
+                state.frames
+                    .mapNotNull { f -> f.rawHex.takeIf { it.length >= 5 }?.substring(0, 5) }
+                    .groupingBy { it }.eachCount().entries
+                    .sortedByDescending { it.value }.take(4)
+            }
+            if (statusTally.isNotEmpty()) {
+                Text(
+                    "状态头（每包开头 2 字节，不是乱码）：" + statusTally.joinToString("　") {
+                        "${it.key} ×${it.value}（${decodeStatusHex(it.key)}）"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
+            }
             LazyColumn(Modifier.fillMaxWidth().weight(1f).padding(top = 6.dp).heightIn(min = 120.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 // 不给 key：同一毫秒内两块相同报文（回显）会撞 key 直接崩，索引键更安全
                 items(state.frames.asReversed()) { f ->
+                    val noisy = f.noiseBytes > 0
                     Column {
-                        Text("${hms(f.atMs)}  ${f.text}", fontFamily = FontFamily.Monospace,
-                            fontSize = 12.sp, lineHeight = 16.sp)
+                        // 这一行是**过滤后**真正送进解析器的字符：干净的时候就是 `+ 5.40 kgf*cm`
                         Text(
-                            if (rawWithStatus) "含状态 ${f.rawHex}" else "有效 ${f.dataHex}",
+                            "${hms(f.atMs)}  ${f.text}" +
+                                (if (noisy) "　（滤除 ${f.noiseBytes} 字节）" else ""),
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 12.sp, lineHeight = 16.sp,
+                            color = if (noisy) WarnOrange else MaterialTheme.colorScheme.onSurface
+                        )
+                        // 这一行是**滤噪声之前**的字节：现场要回看「设备到底发了什么」就看它
+                        Text(
+                            if (rawWithStatus) "含状态 ${f.rawHex}" else "剥状态 ${f.dataHex}",
                             fontFamily = FontFamily.Monospace, fontSize = 11.sp, lineHeight = 15.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        // 滤掉的是设备发的文字，还是链路坏字节？——严格按 UTF-8 试解一次就有答案
+                        f.noiseUtf8?.let {
+                            Text("滤掉的字节按 UTF-8 看：$it", fontFamily = FontFamily.Monospace,
+                                fontSize = 11.sp, lineHeight = 15.sp, color = OkGreen)
+                        }
                     }
                 }
                 if (state.frames.isEmpty()) {
@@ -259,12 +292,36 @@ fun TorqueDiagScreen(onBack: () -> Unit) {
             }
         }
 
-        Text("切换「含 / 已剥状态字节」对照看：FTDI 每个 USB 包开头有 2 个 modem 状态字节，" +
-            "剥对了的话有效字节应以数据的第一个字符开头",
+        Text("切换「含 / 剥状态字节」对照看：FTDI 每个 USB 包开头有 2 个 modem 状态字节" +
+            "（第 1 字节固定是 01，第 2 字节是线路状态：0x10=CTS 0x20=DSR 0x40=RI 0x80=CD），" +
+            "剥对了的话有效字节应以数据的第一个字符开头。看到 01 6x 混在中间，先看上面对照那一列，不要当成乱码。",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 6.dp))
+        Text("文字那一行是**白名单过滤后**的内容（只放行数字、字母、+ - . * 、空格、换行），" +
+            "也就是真正送进解析器的字符；下面那行 hex 是**滤噪声之前**的字节，专门留着回看现场。" +
+            "滤掉多少字节会如实标出来 —— 滤掉的多半是 FTDI 状态字节残留或链路坏字节；" +
+            "但要是「滤掉的字节按 UTF-8 看」解出了成句的文字，那是设备换了说法（不是线路坏），别查错方向。",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp))
     }
+}
+
+/**
+ * 解出状态头第二字节里的线路状态位。
+ * 位值取自 libftdi / usb-serial-for-android 的 `MODEM_STATUS_*`（CTS 0x10、DSR 0x20、RI 0x40、CD 0x80），
+ * 实测设备稳定报 `01 60` = DSR + RI。
+ */
+private fun decodeStatusHex(head: String): String {
+    val b = head.split(' ').getOrNull(1)?.toIntOrNull(16) ?: return "认不出"
+    val bits = buildList {
+        if (b and 0x10 != 0) add("CTS")
+        if (b and 0x20 != 0) add("DSR")
+        if (b and 0x40 != 0) add("RI")
+        if (b and 0x80 != 0) add("CD")
+    }
+    return if (bits.isEmpty()) "无线路状态位" else bits.joinToString("+")
 }
 
 private fun linkText(l: TorqueLinkState): String = when (l) {
