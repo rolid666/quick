@@ -20,7 +20,11 @@ import java.util.zip.ZipOutputStream
  *
  * 列已于 2026-09-22 定稿（用户要求 4）：
  * **时间 / 线别 / 机种 / 扭矩范围 / 设备信息 / 三次测量结果 / 平均扭矩 / 判断结果** 是必有的，
- * 另外带上**判定当时的上下限**（QC 能自证凭什么判 OK）与**原始报文两列**（真正的溯源依据）。
+ * 另外带上**判定当时的上下限**（QC 能自证凭什么判 OK）与**原始报文**列（可读的溯源依据）。
+ *
+ * 2026-09-26 用户要求：**导出里不再要「原始字节(hex)」这一列**（现场看的是数据，不是字节流），
+ * 于是删掉了这一列。**注意库里的 `TorqueRecord.rawHex` 照旧保留**（历史详情页仍可查看），
+ * 只是不往这张表里写 —— 删的是「导出的一列」，不是「留的证据」。
  *
  * 数值列固定 **2 位小数**（[torqueValueText]，与界面/入库同一口径）——
  * 设备实测就是 2 位，导出多写位数是假精度；单位写在列名里，不混进单元格。
@@ -69,8 +73,7 @@ object TorqueXlsxExporter {
                 r.averageText,
                 judgeText(r),                             // OK / NG / 未判定
                 r.sampleCount.toString(),
-                r.rawText,
-                r.rawHex
+                r.rawText
             )
             sb.append("<row r=\"$row\">")
             for ((i, v) in cells.withIndex()) sb.append(cellXml(row, i + 1, v))
@@ -117,7 +120,7 @@ object TorqueXlsxExporter {
         "ID", "时间", "线别", "机种", "扭矩范围", "设备信息",
         "扭矩下限(kgf*cm)", "扭矩上限(kgf*cm)",
         "第1次(kgf*cm)", "第2次(kgf*cm)", "第3次(kgf*cm)", "平均扭矩(kgf*cm)",
-        "判断结果", "参与平均笔数", "原始报文", "原始字节(hex)"
+        "判断结果", "参与平均笔数", "原始报文"
     )
 
     // ---------- 固定部件（与 XlsxExporter 同源；不改那边，各自一份） ----------

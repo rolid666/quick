@@ -241,4 +241,32 @@ class TorqueParserTest {
         val wire = "+5.40kgf*cm".toByteArray(Charsets.ISO_8859_1) + cn
         assertEquals("扭力值", TorqueStreamParser.droppedTextOrNull(wire))
     }
+
+    // ---------- 只记正数（用户 2026-09-26）----------
+
+    /** 直接按解析结果判：`+5.40kgf*cm` → 5.40，`-0.05kgf*cm` → -0.05 */
+    private fun recordable(text: String): Boolean {
+        val rs = p.feed(text.toByteArray(Charsets.ISO_8859_1))
+        assertEquals("这段应该能解析出一笔：$text", 1, rs.size)
+        return rs[0].isRecordableTorque()
+    }
+
+    @Test
+    fun `正数读数照常记录`() {
+        assertTrue(recordable("+5.40kgf*cm"))
+        assertTrue("0.01 也是正数", recordable("+0.01kgf*cm"))
+    }
+
+    @Test
+    fun `负数读数跳过 反扭松与清除键的输出都算`() {
+        assertTrue(!recordable("-0.05kgf*cm"))
+        assertTrue(!recordable("-5.40kgf*cm"))
+    }
+
+    @Test
+    fun `0 也跳过 —— 真正的拧紧测不出零扭力 而 0 混进平均会把一组判成 NG`() {
+        assertTrue(!recordable("+0.00kgf*cm"))
+        assertTrue(!recordable("-0.00kgf*cm"))   // 负零按数值比也是 0
+        assertTrue(!recordable("0.00kgf*cm"))    // 没有符号的 0
+    }
 }

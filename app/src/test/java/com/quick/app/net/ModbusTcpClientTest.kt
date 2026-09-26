@@ -8,6 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.DataInputStream
 import java.io.DataOutputStream
+import java.io.IOException
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.Executors
@@ -286,6 +287,103 @@ class ModbusTcpClientTest {
         } finally {
             client.disconnect()
             dev.stop()
+        }
+    }
+
+    // ---------- 迟到应答（2026-09-26：现场「事务 ID 不匹配 → 断线」的根因）----------
+
+    @Test
+    fun `迟到的上一笔应答被丢弃 本轮的应答照样读到 连接不断`() {
+        // 现场现象：上一笔读超时后重连，新连接上读到的第一帧是上一笔的事务 ID
+        // （日志「期望0x52d 收到0x52c」）。这一帧必须**读完即丢**，不能把连接判死。
+        val dev = MockDevice { _, tx, unit ->
+            readResponse(tx - 1, unit, IntArray(Registers.TOTAL)) +   // 上一笔的迟到应答（帧体 74 字节）
+                readResponse(tx, unit, IntArray(Registers.TOTAL))     // 本轮的应答
+        }.also { it.start() }
+        val client = ModbusTcpClient()
+        try {
+            client.connect("127.0.0.1", dev.port, 2000, 1000)
+            val got = client.readHoldingRegisters(0, Registers.TOTAL)   // 不该抛异常
+            assertEquals(Registers.TOTAL, got.size)
+            assertEquals("迟到帧要被计数（诊断页用它区分「仪器慢」和「链路坏」）",
+                1L, client.staleFrames)
+            // 连接仍然可用：第二笔照常
+            val again = client.readHoldingRegisters(0, Registers.TOTAL)
+            assertEquals(Registers.TOTAL, again.size)
+        } finally {
+            client.disconnect(); dev.stop()
+        }
+    }
+
+    @Test
+    fun `单元 ID 不符也要先把帧读完 —— 残留字节不能污染下一次请求`() {
+        // 这条钉的是「校验在读取之前」那个错误顺序：帧体没读完就抛异常，
+        // 下一次请求会把残留当成 MBAP 头解析（事务 ID 变垃圾 → 再残留，出不来）
+        var n = 0
+        val dev = MockDevice { _, tx, unit ->
+            n++
+            if (n == 1) readResponse(tx, unit + 1, IntArray(Registers.TOTAL))   // 单元 ID 不符
+            else readResponse(tx, unit, IntArray(Registers.TOTAL))
+        }.also { it.start() }
+        val client = ModbusTcpClient()
+        try {
+            client.connect("127.0.0.1", dev.port, 2000, 1000)
+            try {
+                client.readHoldingRegisters(0, Registers.TOTAL)
+                throw AssertionError("应抛出 IOException")
+            } catch (e: IOException) {
+                assertTrue("应是单元 ID 不符：${e.message}", e.message!!.contains("单元 ID"))
+            }
+            // ★ 关键：第二次请求必须正常 —— 说明第一次的帧体已经被读完，缓冲区没残留
+            val got = client.readHoldingRegisters(0, Registers.TOTAL)
+            assertEquals(Registers.TOTAL, got.size)
+        } finally {
+            client.disconnect(); dev.stop()
+        }
+    }
+
+    @Test
+    fun `连续迟到帧超过上限才报错 不会一直等下去`() {
+        val dev = MockDevice { _, tx, unit ->
+            // 一次性写 MAX+1 帧全都是「上一笔」的应答
+            (1..ModbusTcpClient.MAX_STALE_FRAMES + 1).fold(ByteArray(0)) { acc, _ ->
+                acc + readResponse(tx - 1, unit, IntArray(Registers.TOTAL))
+            }
+        }.also { it.start() }
+        val client = ModbusTcpClient()
+        try {
+            client.connect("127.0.0.1", dev.port, 2000, 1000)
+            try {
+                client.readHoldingRegisters(0, Registers.TOTAL)
+                throw AssertionError("应抛出 IOException（超过迟到帧上限）")
+            } catch (e: IOException) {
+                assertTrue("应是「连续迟到」：${e.message}", e.message!!.contains("都不是本轮的应答"))
+            }
+            assertEquals(ModbusTcpClient.MAX_STALE_FRAMES.toLong(), client.staleFrames)
+        } finally {
+            client.disconnect(); dev.stop()
+        }
+    }
+
+    @Test
+    fun `长度字段离谱时立刻报错 —— 不去等一大堆永远不来的字节`() {
+        val dev = MockDevice { _, tx, unit ->
+            // 长度 = 0xFFFF（远超 MODBUS 的 PDU 上限）→ 帧边界已经丢了，必须立刻失败
+            byteArrayOf(
+                (tx ushr 8).toByte(), tx.toByte(), 0, 0, 0xFF.toByte(), 0xFF.toByte(), unit.toByte()
+            )
+        }.also { it.start() }
+        val client = ModbusTcpClient()
+        try {
+            client.connect("127.0.0.1", dev.port, 2000, 1000)
+            try {
+                client.readHoldingRegisters(0, Registers.TOTAL)
+                throw AssertionError("应抛出 IOException（长度异常）")
+            } catch (e: IOException) {
+                assertTrue("应是长度异常：${e.message}", e.message!!.contains("长度异常"))
+            }
+        } finally {
+            client.disconnect(); dev.stop()
         }
     }
 

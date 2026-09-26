@@ -83,6 +83,15 @@ fun DiagnosticScreen(onBack: () -> Unit) {
                 color = Color(0xFFC62828)
             )
         }
+        // 迟到帧：仪器晚好几秒才回上一笔，应答落在当前连接上 —— 丢掉即可，不再断线（2026-09-26）
+        if (state.staleFrames > 0L) {
+            Text(
+                "迟到帧（已丢弃，连接保持）：${state.staleFrames} 帧" +
+                    "　—— 仪器应答偏慢的旁证；它涨而断线不涨，说明是仪器/网络慢，不是代码把连接判死",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color(0xFFEF6C00)
+            )
+        }
         Text("日志含完整收发帧（每帧 hex 对应厂家报文格式：事务ID 协议ID 长度 单元ID 功能码 …）",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)

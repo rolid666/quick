@@ -55,6 +55,11 @@ data class MeasureUiState(
     val pendingCount: Int = 0,                     // 待补记(崩溃恢复)数量
     // 断线原因计数（自本次启动累计，诊断页展示）：回答「代码问题还是设备/网络问题」的原始证据
     val dropStats: Map<String, Int> = emptyMap(),
+    /**
+     * 因「不是本轮应答」被丢弃的**迟到帧**累计数（2026-09-26 新增）。
+     * 与 [dropStats] 并列看：迟到帧多但连接不再断，说明仪器应答慢而不是链路坏。
+     */
+    val staleFrames: Long = 0L,
     // 当前选择（控制器是唯一真源 → 保存后自动清空设备编号，界面跟着变，不会各存一份）
     val selLine: String? = null,
     val selModel: String? = null,
@@ -373,7 +378,11 @@ class MeasurementController(private val app: Application, val db: AppDatabase) {
                     okReads++
                     val snap = DeviceSnapshot.parse(regs)
                     _ui.update {
-                        it.copy(snapshot = snap, conn = ConnState.Connected(cfg.ip, cfg.port), lastError = null)
+                        it.copy(
+                            snapshot = snap, conn = ConnState.Connected(cfg.ip, cfg.port), lastError = null,
+                            // 迟到帧只可能在本轮读取里被丢弃，顺手同步给界面（等值时 StateFlow 不会触发重组）
+                            staleFrames = client.staleFrames
+                        )
                     }
                     if (paused) {
                         // 弹卡还在显示：这一帧只用来保温链路，绝不判定（用户要求"显示完再记下一组"）

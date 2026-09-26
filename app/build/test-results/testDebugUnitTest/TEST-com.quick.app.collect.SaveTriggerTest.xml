@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.quick.app.collect.SaveTriggerTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-09-25T14:37:02" hostname="DESKTOP-T2R0P5R" time="0.005">
+<testsuite name="com.quick.app.collect.SaveTriggerTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-09-26T15:11:59" hostname="DESKTOP-T2R0P5R" time="0.01">
   <properties/>
-  <testcase name="重连后重建基线 —— 不把重连前那笔重复记一次" classname="com.quick.app.collect.SaveTriggerTest" time="0.003"/>
+  <testcase name="重连后重建基线 —— 不把重连前那笔重复记一次" classname="com.quick.app.collect.SaveTriggerTest" time="0.007"/>
   <testcase name="读晚了（标志已自清但内容变了）—— 补收" classname="com.quick.app.collect.SaveTriggerTest" time="0.0"/>
-  <testcase name="连续两笔内容完全相同 —— 靠标志脉冲分辨，两笔都记" classname="com.quick.app.collect.SaveTriggerTest" time="0.0"/>
+  <testcase name="连续两笔内容完全相同 —— 靠标志脉冲分辨，两笔都记" classname="com.quick.app.collect.SaveTriggerTest" time="0.001"/>
   <testcase name="弹卡暂停后恢复 —— 第一帧只重建基线，暂停期间的变化不算新结果" classname="com.quick.app.collect.SaveTriggerTest" time="0.0"/>
   <testcase name="已知残余窗口：整笔错过标志且内容与上一笔相同 —— 无法识别" classname="com.quick.app.collect.SaveTriggerTest" time="0.0"/>
   <testcase name="补收通道关闭时 —— 读晚的那笔不记（宁可少记也不重复）" classname="com.quick.app.collect.SaveTriggerTest" time="0.0"/>
-  <testcase name="标志自清后内容没变 —— 不重复记" classname="com.quick.app.collect.SaveTriggerTest" time="0.001"/>
+  <testcase name="标志自清后内容没变 —— 不重复记" classname="com.quick.app.collect.SaveTriggerTest" time="0.0"/>
   <testcase name="同一笔被两帧读到（1 秒窗口跨了两个周期）—— 只记一次" classname="com.quick.app.collect.SaveTriggerTest" time="0.0"/>
   <testcase name="降级模式（没有结果块）—— 走补收通道也不记" classname="com.quick.app.collect.SaveTriggerTest" time="0.0"/>
   <testcase name="判定值非法 —— 不补收" classname="com.quick.app.collect.SaveTriggerTest" time="0.0"/>

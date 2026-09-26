@@ -1,6 +1,7 @@
 package com.quick.app.ui.torque
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -17,11 +18,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Refresh
@@ -46,6 +49,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -86,11 +90,15 @@ import java.util.Locale
  *   └─ 时间到 + 四项信息齐全 → 自动保存一行（三笔 + 平均 + OK/NG）
  * ```
  *
- * 三条用户明确要求的界面行为：
+ * 用户明确要求的界面行为：
  * 1. **单位只标注一次**（写在结果前面），单元格里只有数字；
  * 2. **四项（线别/机种/扭矩范围/设备信息）没选全时**：三次测完也**不保存**，
  *    顶部弹一条醒目告警，并把**没选的那几个下拉整块点亮成橙色加粗**，选完即恢复；
- * 3. **重测按键不用密码**，点了就清空暂存（已经保存的记录不受影响）。
+ * 3. **重测按键不用密码**，点了就清空暂存（已经保存的记录不受影响）；
+ * 4. **每格右上角一个小叉**（2026-09-26）：只删这一笔，后面的笔往前补位，
+ *    下一笔测量自动补满 —— 同样不用密码；
+ * 5. **只记正数**（2026-09-26）：反扭松 / 按清除键时设备吐出的非正数读数被跳过，
+ *    跳过多少笔在卡片里如实显示（不静默）。
  *
  * 本页**不碰**烙铁的任何状态：控制器在 QuickApp 里各跑各的，切页面只是换这一屏。
  */
@@ -194,7 +202,9 @@ fun TorqueMeasureScreen(
                 remainSec = state.saveAtMs?.let { (it - now) / 1000.0 },
                 rangeMin = selRange?.minValue,
                 rangeMax = selRange?.maxValue,
-                onRemeasure = { torque.remeasure() }
+                onRemeasure = { torque.remeasure() },
+                // 单笔删除：格子右上角的小叉（用户 2026-09-26）。无需密码，删掉后下一笔自动补上。
+                onDeleteSample = { i -> torque.removeSample(i) }
             )
 
             // ── 最近保存的一组 ──
@@ -323,7 +333,8 @@ private fun SessionCard(
     remainSec: Double?,
     rangeMin: Double?,
     rangeMax: Double?,
-    onRemeasure: () -> Unit
+    onRemeasure: () -> Unit,
+    onDeleteSample: (Int) -> Unit
 ) {
     val full = state.sessionSeq >= state.sessionTotal
     val avg = if (full) state.sessionSample.takeIf { it.size == state.sessionTotal }?.average() else null
@@ -356,14 +367,23 @@ private fun SessionCard(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 for (i in 0 until state.sessionTotal) {
+                    val filled = i < state.sessionSeq
                     SlotBox(
                         label = "第 ${i + 1} 次",
                         text = state.sessionSample.getOrNull(i)?.let { torqueValueText(it) } ?: "--",
-                        filled = i < state.sessionSeq,
+                        filled = filled,
+                        // 小叉只在有数据的那几格出现（空格子没什么可删的）
+                        onDelete = if (filled) ({ onDeleteSample(i) }) else null,
                         modifier = Modifier.weight(1f)
                     )
                 }
             }
+            Text(
+                "右侧小叉 = 只删掉这一笔；删掉后下一笔测量会自动补到这一格（无需密码）",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
+                modifier = Modifier.padding(top = 6.dp)
+            )
 
             // 平均值 + 判定（满三笔才有；判定与保存时用的是同一个函数）
             Row(Modifier.padding(top = 14.dp), verticalAlignment = Alignment.Bottom) {
@@ -398,9 +418,20 @@ private fun SessionCard(
                 modifier = Modifier.padding(top = 10.dp)
             )
             if (state.ignoredCount > 0) {
+                // 删过一笔之后本组可能已经不满，所以措辞不能写死「本组已满」（见 §29：ignoredCount 是事实，删笔不抹掉）
                 Text(
-                    "本组已满，之后的 ${state.ignoredCount} 笔已忽略（未计入本组）—— 等保存后重测这几笔",
+                    "本组已有 ${state.ignoredCount} 笔因「已满」被忽略（未计入本组）" +
+                        if (full) " —— 等保存后重测这几笔" else " —— 这几笔没有被记进来",
                     style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold,
+                    color = WarnOrange, modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+            // 跳过的非正数读数要看得见（用户 2026-09-26：只记正数）——
+            // 反扭松 / 按清除键时设备会吐负数，这里如实交代跳了多少笔，不静默
+            if (state.skippedNonPositive > 0) {
+                Text(
+                    "已跳过 ${state.skippedNonPositive} 笔非正数读数（反扭松或按清除键时设备的输出，未计入本组）",
+                    style = MaterialTheme.typography.bodySmall,
                     color = WarnOrange, modifier = Modifier.padding(top = 4.dp)
                 )
             }
@@ -422,9 +453,21 @@ private fun SessionCard(
     }
 }
 
-/** 一个暂存格：`第 1 次` + 数值（未测到显示 --） */
+/**
+ * 一个暂存格：`第 1 次` + 数值（未测到显示 --）。
+ *
+ * [onDelete] 非空时，格子**右上角**出现一个小叉（用户 2026-09-26 要求：单笔可删）。
+ * 用普通 Box + clickable 而不是 IconButton：IconButton 会按 Material 的最小触控尺寸
+ * 自动放大（48dp），在这个 96dp 高的小格子里会把数值挤歪。
+ */
 @Composable
-private fun SlotBox(label: String, text: String, filled: Boolean, modifier: Modifier = Modifier) {
+private fun SlotBox(
+    label: String,
+    text: String,
+    filled: Boolean,
+    onDelete: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
     val onC = MaterialTheme.colorScheme.onPrimaryContainer
     Surface(
         modifier = modifier.height(96.dp),
@@ -432,20 +475,37 @@ private fun SlotBox(label: String, text: String, filled: Boolean, modifier: Modi
         color = onC.copy(alpha = if (filled) 0.10f else 0.04f),
         border = BorderStroke(1.dp, onC.copy(alpha = if (filled) 0.45f else 0.18f))
     ) {
-        Column(
-            Modifier.fillMaxSize().padding(8.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(label, style = MaterialTheme.typography.labelMedium,
-                color = onC.copy(alpha = 0.8f))
-            Text(
-                text,
-                fontSize = if (text.length > 6) 22.sp else 30.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (filled) onC else onC.copy(alpha = 0.45f),
-                maxLines = 1
-            )
+        Box(Modifier.fillMaxSize()) {
+            Column(
+                Modifier.fillMaxSize().padding(8.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(label, style = MaterialTheme.typography.labelMedium,
+                    color = onC.copy(alpha = 0.8f))
+                Text(
+                    text,
+                    fontSize = if (text.length > 6) 22.sp else 30.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (filled) onC else onC.copy(alpha = 0.45f),
+                    maxLines = 1
+                )
+            }
+            if (onDelete != null) {
+                Box(
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .size(36.dp)                       // 手指点得到，又不盖住数值
+                        .clip(CircleShape)
+                        .clickable(onClick = onDelete),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Close, "删除 $label",
+                        tint = WarnOrange, modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
         }
     }
 }

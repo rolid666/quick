@@ -1,15 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.quick.app.net.ModbusTcpClientTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-09-25T14:37:02" hostname="DESKTOP-T2R0P5R" time="0.226">
+<testsuite name="com.quick.app.net.ModbusTcpClientTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-09-26T15:11:59" hostname="DESKTOP-T2R0P5R" time="0.257">
   <properties/>
-  <testcase name="全读请求字节与厂家报文格式一致" classname="com.quick.app.net.ModbusTcpClientTest" time="0.01"/>
+  <testcase name="全读请求字节与厂家报文格式一致" classname="com.quick.app.net.ModbusTcpClientTest" time="0.013"/>
   <testcase name="异常应答抛出 ModbusException" classname="com.quick.app.net.ModbusTcpClientTest" time="0.003"/>
   <testcase name="FC06 写寄存器回显正确" classname="com.quick.app.net.ModbusTcpClientTest" time="0.001"/>
-  <testcase name="内容签名只随保存字段变化 不随实时量与通道变化" classname="com.quick.app.net.ModbusTcpClientTest" time="0.003"/>
-  <testcase name="按手册地址分配表解析整帧结果" classname="com.quick.app.net.ModbusTcpClientTest" time="0.002"/>
-  <testcase name="仪器不应答时抛出超时" classname="com.quick.app.net.ModbusTcpClientTest" time="0.204"/>
+  <testcase name="内容签名只随保存字段变化 不随实时量与通道变化" classname="com.quick.app.net.ModbusTcpClientTest" time="0.004"/>
+  <testcase name="连续迟到帧超过上限才报错 不会一直等下去" classname="com.quick.app.net.ModbusTcpClientTest" time="0.012"/>
+  <testcase name="按手册地址分配表解析整帧结果" classname="com.quick.app.net.ModbusTcpClientTest" time="0.006"/>
+  <testcase name="仪器不应答时抛出超时" classname="com.quick.app.net.ModbusTcpClientTest" time="0.21"/>
   <testcase name="上传标志未按下时不触发" classname="com.quick.app.net.ModbusTcpClientTest" time="0.0"/>
+  <testcase name="单元 ID 不符也要先把帧读完 —— 残留字节不能污染下一次请求" classname="com.quick.app.net.ModbusTcpClientTest" time="0.002"/>
+  <testcase name="长度字段离谱时立刻报错 —— 不去等一大堆永远不来的字节" classname="com.quick.app.net.ModbusTcpClientTest" time="0.002"/>
+  <testcase name="迟到的上一笔应答被丢弃 本轮的应答照样读到 连接不断" classname="com.quick.app.net.ModbusTcpClientTest" time="0.002"/>
   <testcase name="老固件只给 0x00~0x1E 时降级解析不崩且结果块为空" classname="com.quick.app.net.ModbusTcpClientTest" time="0.0"/>
-  <testcase name="判定 0x23 三种取值分别对应 OK NG 无效" classname="com.quick.app.net.ModbusTcpClientTest" time="0.003"/>
+  <testcase name="判定 0x23 三种取值分别对应 OK NG 无效" classname="com.quick.app.net.ModbusTcpClientTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

@@ -108,8 +108,10 @@ fun TorqueDiagScreen(onBack: () -> Unit) {
                 else -> MaterialTheme.colorScheme.onSurfaceVariant
             })
         Text("监听：${if (state.listen) "开" else "关"}　" +
-            "累计收到 ${state.byteCount} 字节 / 解析 ${state.readingCount} 笔　" +
-            "待补记 ${state.pendingCount} 组",
+            "累计收到 ${state.byteCount} 字节 / 解析 ${state.readingCount} 笔" +
+            // 非正数读数被跳过多少笔（用户 2026-09-26：只记正数）—— 在这里如实交代，不静默
+            (if (state.skippedNonPositive > 0) "／跳过非正数 ${state.skippedNonPositive} 笔" else "") +
+            "　待补记 ${state.pendingCount} 组",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         // 解析缓冲：没认出来的尾巴如实显示 —— 格式又变了的话，这里会堆着几十字节

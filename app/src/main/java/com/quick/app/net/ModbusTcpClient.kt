@@ -23,6 +23,12 @@ data class FrameLog(val dir: Char, val hex: String, val note: String = "")
  * - MODBUS TCP 无 RTU CRC；请求-响应一对一，事务 ID 回显配对。
  * - 全部方法串行同步；调用方负责放 IO 线程。
  * - 只实现本项目需要的 FC 0x03 / 0x06；不做功能码臆造。
+ *
+ * **迟到应答（2026-09-26）**：本仪器会晚好几秒甚至几十秒才回上一笔（现场证据见 docs §28），
+ * 迟到的应答可能落在**下一条 TCP 连接**上。所以 [exchange] 对「事务 ID 不是本轮」的帧
+ * **读完即丢、继续等本轮**，而不是把连接判死 —— 旧实现每遇到一次迟到就断线重连，
+ * 于是「断连」不断出现（`dropStats` 里的「其它通信失败／事务 ID 不匹配」）。
+ * 丢弃的帧数记在 [staleFrames]，诊断页与断线统计一起显示。
  */
 class ModbusTcpClient(
     private val onFrame: (FrameLog) -> Unit = {}
@@ -32,6 +38,16 @@ class ModbusTcpClient(
     private var out: OutputStream? = null
     private var txCounter = 0
     private val lock = Any()
+
+    /**
+     * 因「不是本轮应答」而被丢弃的迟到帧**累计**数（自本次进程启动）。
+     *
+     * 这是回答「链路到底稳不稳」的仪器：它一直涨 = 仪器侧经常迟到应答，
+     * 但连接不再因此被拆掉（旧实现每次都断线重连，现场看到的就是「断连」）。
+     */
+    @Volatile
+    var staleFrames: Long = 0L
+        private set
 
     /**
      * ⚠️ `Socket.isConnected` 只表示「曾经连上过」，**对端断开后它仍为 true**，
@@ -110,23 +126,66 @@ class ModbusTcpClient(
 
             val inpS = inp ?: throw IOException("未连接")
             try {
-                val head = ByteArray(7)
-                inpS.readFully(head)
-                val respTx = ((head[0].toInt() and 0xFF) shl 8) or (head[1].toInt() and 0xFF)
-                val pid = ((head[2].toInt() and 0xFF) shl 8) or (head[3].toInt() and 0xFF)
-                val len = ((head[4].toInt() and 0xFF) shl 8) or (head[5].toInt() and 0xFF)
-                val respUnit = head[6].toInt() and 0xFF
-                if (pid != 0) throw IOException("协议 ID 非 0: 0x${pid.toString(16)}")
-                if (respTx != tx) throw IOException("事务 ID 不匹配: 期望0x${tx.toString(16)} 收到0x${respTx.toString(16)}")
-                if (respUnit != unitId) throw IOException("单元 ID 不匹配: $respUnit != $unitId")
-                // Length 含单元 ID 本身（1 字节已读），剩余 = len - 1
-                if (len < 2) throw IOException("响应长度异常: $len")
-                val rest = ByteArray(len - 1)
-                inpS.readFully(rest)
-                onFrame(FrameLog('←', (head + rest).hex()))
-                val fc = rest[0].toInt() and 0xFF
-                if ((fc and 0x80) != 0) throw ModbusException(rest[1].toInt() and 0xFF)
-                return rest.copyOfRange(1, rest.size)
+                var stale = 0
+                while (true) {
+                    val head = ByteArray(7)
+                    inpS.readFully(head)
+                    val respTx = ((head[0].toInt() and 0xFF) shl 8) or (head[1].toInt() and 0xFF)
+                    val pid = ((head[2].toInt() and 0xFF) shl 8) or (head[3].toInt() and 0xFF)
+                    val len = ((head[4].toInt() and 0xFF) shl 8) or (head[5].toInt() and 0xFF)
+                    val respUnit = head[6].toInt() and 0xFF
+
+                    // ⚠️ 顺序（2026-09-26 修）：**先把整帧读完，再做强校验**。
+                    // 反过来的话，校验失败抛异常时帧体还留在接收缓冲区里 —— 下一次 exchange 会
+                    // 把那串残留当成 MBAP 头来解析（事务 ID 自然是垃圾）→ 又失败 → 又残留，
+                    // 是个出不来的正反馈。长度决定帧体大小，只有长度这条必须先判。
+                    if (len < 2 || len > MAX_MBAP_LEN) {
+                        onFrame(FrameLog('←', head.hex(), "⚠ 长度异常 len=$len，帧边界已丢 → 只能丢弃本连接"))
+                        throw IOException("响应长度异常: $len")
+                    }
+                    val rest = ByteArray(len - 1)
+                    inpS.readFully(rest)
+                    val full = head + rest
+
+                    // ⚠️「不是本轮的应答」= 上一笔的**迟到应答**，丢弃后继续等，**绝不断线**。
+                    // 现场证据（2026-09-26 用户截图）：一次读超时后重连，新连接上读到的第一帧
+                    // 正好是上一笔的事务 ID（期望 0x52d 收到 0x52c），而那个 tx 的请求是在**上一条
+                    // 连接**上发出的 —— 说明仪器侧（很可能是 Wi-Fi 透传模块）把串口迟到的应答
+                    // 转发到了当时那条 TCP 连接上。
+                    // 旧实现把它当致命错误 → 关连接重连 → 下一笔的应答又迟到 → 越连越乱。
+                    if (respTx != tx) {
+                        if (stale >= MAX_STALE_FRAMES) {
+                            onFrame(
+                                FrameLog(
+                                    '←', full.hex(),
+                                    "⚠ 第 ${stale + 1} 帧仍不是本轮的应答（tx 0x${tx.toString(16)}）→ 放弃本轮，交回上层重连"
+                                )
+                            )
+                            throw IOException("连续 $MAX_STALE_FRAMES 帧都不是本轮的应答（tx 0x${tx.toString(16)}）→ 重连")
+                        }
+                        stale++
+                        staleFrames++
+                        onFrame(
+                            FrameLog(
+                                '←', full.hex(),
+                                "⚠ 迟到帧：tx=0x${respTx.toString(16)} ≠ 本轮 0x${tx.toString(16)}，已丢弃并继续等本轮应答"
+                            )
+                        )
+                        continue
+                    }
+                    // 到这里才确认「这一帧就是本轮的应答」；下面这些校验失败才算真的异常。
+                    // 无论校验是否通过，帧都已经读完并记了日志 —— 这是诊断页要看的原始证据。
+                    onFrame(FrameLog('←', full.hex()))
+                    if (pid != 0) throw IOException("协议 ID 非 0: 0x${pid.toString(16)}")
+                    if (respUnit != unitId) throw IOException("单元 ID 不匹配: $respUnit != $unitId")
+                    val fc = rest[0].toInt() and 0xFF
+                    if ((fc and 0x80) != 0) {
+                        // 异常应答 = FC|0x80 + 异常码：缺异常码的畸形帧不能硬取 rest[1]
+                        if (rest.size < 2) throw IOException("异常应答长度不足（只有功能码）")
+                        throw ModbusException(rest[1].toInt() and 0xFF)
+                    }
+                    return rest.copyOfRange(1, rest.size)
+                }
             } catch (e: SocketTimeoutException) {
                 onFrame(FrameLog('!', "", "响应超时(${s.soTimeout}ms)"))
                 throw ModbusTimeoutException()
@@ -144,4 +203,24 @@ class ModbusTcpClient(
     private fun ByteArray.hex(): String = joinToString(" ") { "%02X".format(it) }
     private fun Int.hi(): Byte = (this ushr 8).toByte()
     private fun Int.lo(): Byte = this.toByte()
+
+    companion object {
+        /**
+         * 一次请求里最多容忍几帧「不是本轮应答」的迟到帧。
+         *
+         * 每跳一帧都是白拿的（那帧已经在缓冲区里，读完就完事），但不能没有上限：
+         * 连续这么多帧都对不上，说明两边的节奏已经乱了，继续读下去没有意义 ——
+         * 抛出去让控制器断线重连（重连会把残留一并丢掉）。
+         */
+        const val MAX_STALE_FRAMES = 4
+
+        /**
+         * MBAP 长度字段的上限：MODBUS 规定 PDU ≤ 253 字节，加上单元 ID 1 字节 = 254。
+         *
+         * 本项目自己读 36 个寄存器时长度是 75，远远够用。设这个上限是为了**防失步**：
+         * 万一接收到一段错位的字节，长度字段可能是任意 16 位值（最大 65535），
+         * 照它去读就会卡在等一大堆永远不来的字节上，直到超时。
+         */
+        const val MAX_MBAP_LEN = 254
+    }
 }

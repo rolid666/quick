@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.quick.app.config.ConfigBackupTorqueTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-09-25T14:37:02" hostname="DESKTOP-T2R0P5R" time="0.018">
+<testsuite name="com.quick.app.config.ConfigBackupTorqueTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-09-26T15:11:59" hostname="DESKTOP-T2R0P5R" time="0.038">
   <properties/>
-  <testcase name="未知 kind 与空名称一律丢弃" classname="com.quick.app.config.ConfigBackupTorqueTest" time="0.004"/>
+  <testcase name="未知 kind 与空名称一律丢弃" classname="com.quick.app.config.ConfigBackupTorqueTest" time="0.022"/>
   <testcase name="其它三类不带数值字段" classname="com.quick.app.config.ConfigBackupTorqueTest" time="0.0"/>
   <testcase name="导出的名称与数值一定自洽" classname="com.quick.app.config.ConfigBackupTorqueTest" time="0.008"/>
-  <testcase name="空数组不炸" classname="com.quick.app.config.ConfigBackupTorqueTest" time="0.0"/>
+  <testcase name="空数组不炸" classname="com.quick.app.config.ConfigBackupTorqueTest" time="0.001"/>
   <testcase name="数值不可用的范围只保留名称 绝不编造数值" classname="com.quick.app.config.ConfigBackupTorqueTest" time="0.0"/>
   <testcase name="v5 旧备份没有上下限 保留名称但不编造数值" classname="com.quick.app.config.ConfigBackupTorqueTest" time="0.0"/>
-  <testcase name="格式标识不能被改动" classname="com.quick.app.config.ConfigBackupTorqueTest" time="0.003"/>
+  <testcase name="格式标识不能被改动" classname="com.quick.app.config.ConfigBackupTorqueTest" time="0.004"/>
   <testcase name="导出再导入 四项字典一条不少 数值也一样" classname="com.quick.app.config.ConfigBackupTorqueTest" time="0.001"/>
   <testcase name="备份文件里的数字是字符串时按数字读" classname="com.quick.app.config.ConfigBackupTorqueTest" time="0.001"/>
   <testcase name="扭矩范围导出时带上限与下限" classname="com.quick.app.config.ConfigBackupTorqueTest" time="0.0"/>

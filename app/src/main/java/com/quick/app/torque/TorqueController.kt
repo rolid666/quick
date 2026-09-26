@@ -70,6 +70,13 @@ data class TorqueUiState(
     val sessionTexts: List<String> = emptyList(),
     /** 满组后被忽略的笔数（第 4 笔…）—— 界面必须如实显示，不静默 */
     val ignoredCount: Int = 0,
+    /**
+     * 因为「不是正数」被跳过的读数**累计**笔数（自本次启动）。
+     *
+     * 设备反扭松 / 按清除键时会吐出负数（用户 2026-09-26），这类读数不进暂存组；
+     * 但**必须看得见**：界面与诊断页都显示这个数，绝不做成静默丢弃。
+     */
+    val skippedNonPositive: Int = 0,
     /** 满组后正在等自动保存的截止时刻（界面显示倒计时） */
     val saveAtMs: Long? = null,
     /** 缺哪几项（满组但信息不全 → 显眼提示；空 = 正常） */
@@ -159,6 +166,11 @@ class TorqueController(private val app: Application, val db: AppDatabase) {
     /** 上一笔被接受的报文原文与时刻（只用于挡「同一笔被重复输出」这种回显） */
     @Volatile private var lastAcceptedText: String = ""
     @Volatile private var lastAcceptedMs = 0L
+
+    /** 上一笔被跳过的非正数读数（只为不把同一串负数刷满日志，不影响跳过与否） */
+    @Volatile private var lastSkippedText: String = ""
+    @Volatile private var lastSkippedMs = 0L
+    @Volatile private var skippedNonPositive: Int = 0
 
     suspend fun init() {
         _line = db.settingDao().get(KEY_LINE)
@@ -307,6 +319,34 @@ class TorqueController(private val app: Application, val db: AppDatabase) {
         postLog("↺ 已重测：清空本组暂存（$n 笔）")
     }
 
+    /**
+     * 删掉本组的**某一笔**（界面上每格右上角的小叉，用户 2026-09-26 要求）。
+     *
+     * 与「重测」同级：**无需密码**，也不影响任何已保存的记录（暂存只在内存里）。
+     * 删掉之后后面的笔往前补位、本组不再满 —— 所以这里必须：
+     * 1. **取消已经排好的自动保存**：否则倒计时到点会把一个缺笔的组当「三次测完」存进去
+     *    （[trySave] 里有 `isFull` 兜底，但主动取消更干净：界面上的倒计时也立刻消失，
+     *    操作员不会以为马上要保存）；
+     * 2. 清掉「信息不全」提示（那个提示只在满组时才有意义，下一笔测完会重新判）。
+     *
+     * 下一笔测量进来时会自动补到最后一格，凑满三笔后照常起延时自动保存。
+     */
+    fun removeSample(index: Int) {
+        if (!session.removeAt(index)) {
+            postLog("· 删除第 ${index + 1} 笔：该位置没有数据，忽略")
+            return
+        }
+        // 删完不再是「同一批三笔」了：清掉回显判据，免得同一格新测的读数被当成重复报文挡掉
+        lastAcceptedText = ""
+        if (!session.isFull) {
+            saveJob?.cancel()
+            saveJob = null
+            _ui.update { it.copy(saveAtMs = null, missingFields = emptyList()) }
+        }
+        pushSession()
+        postLog("✕ 已删除第 ${index + 1} 笔暂存：本组剩 ${session.count}/${SESSION_SIZE} 笔，下一笔测量会自动补上")
+    }
+
     // ---------- 链路 ----------
 
     private suspend fun runLink() {
@@ -416,6 +456,22 @@ class TorqueController(private val app: Application, val db: AppDatabase) {
     private suspend fun onReading(reading: TorqueReading) {
         _ui.update { it.copy(lastReading = reading) }
         val now = System.currentTimeMillis()
+
+        // ── 只记正数（用户 2026-09-26）──
+        // 判据与理由见 [isRecordableTorque]（设备反扭松 / 按「清除」时吐出的负数或 0 不算读数）。
+        // 跳过**不是静默丢弃**：日志留原文、界面留累计笔数。
+        if (!reading.isRecordableTorque()) {
+            skippedNonPositive++
+            val n = skippedNonPositive
+            _ui.update { it.copy(skippedNonPositive = n) }
+            // 设备可能连着吐同一串负数：原文相同且挨得很近就只留一条日志（累计数照涨）
+            if (reading.rawLine != lastSkippedText || now - lastSkippedMs > SKIP_LOG_GAP_MS) {
+                postLog("· 非正数读数已跳过（不计入本组）：${reading.rawLine}　—— 本次启动累计跳过 $n 笔")
+            }
+            lastSkippedText = reading.rawLine
+            lastSkippedMs = now
+            return
+        }
 
         // 同一笔被设备重复输出（回显）：原文一模一样且几乎同时 → 只认一笔。
         // 判据故意收得很窄（完全相同 + 极短间隔）——真实的两次测量不可能这么近，
@@ -656,6 +712,12 @@ class TorqueController(private val app: Application, val db: AppDatabase) {
 
         /** 判定为「同一笔被重复输出」的最大间隔（判据还要求原文完全相同） */
         const val ECHO_GAP_MS = 150L
+
+        /**
+         * 同一串非正数读数连着来时，日志最多隔这么久留一条（**只影响日志条数**，
+         * 跳过的笔数照实累计 —— 不刷屏，也不静默）。
+         */
+        const val SKIP_LOG_GAP_MS = 2000L
 
         const val MAX_FRAMES = 300
         const val MAX_LOG = 2000

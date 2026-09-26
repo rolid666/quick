@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.quick.app.torque.usb.FtdiBaudTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-09-25T14:37:03" hostname="DESKTOP-T2R0P5R" time="0.004">
+<testsuite name="com.quick.app.torque.usb.FtdiBaudTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-09-26T15:11:59" hostname="DESKTOP-T2R0P5R" time="0.005">
   <properties/>
   <testcase name="小数编码四档都能取到" classname="com.quick.app.torque.usb.FtdiBaudTest" time="0.002"/>
   <testcase name="19200 —— 扭力计手册写死的档位，必须是 0x809C" classname="com.quick.app.torque.usb.FtdiBaudTest" time="0.0"/>
-  <testcase name="KNOWN 表逐个核对 —— 与 FTDI 应用笔记的常见档位一致" classname="com.quick.app.torque.usb.FtdiBaudTest" time="0.0"/>
-  <testcase name="尾包不足 2 字节的余量 —— 跳过，不当数据（库在这里会抛异常，我们选择跳过）" classname="com.quick.app.torque.usb.FtdiBaudTest" time="0.001"/>
+  <testcase name="KNOWN 表逐个核对 —— 与 FTDI 应用笔记的常见档位一致" classname="com.quick.app.torque.usb.FtdiBaudTest" time="0.001"/>
+  <testcase name="尾包不足 2 字节的余量 —— 跳过，不当数据（库在这里会抛异常，我们选择跳过）" classname="com.quick.app.torque.usb.FtdiBaudTest" time="0.0"/>
   <testcase name="包长给成 0 或负数 —— 退回 64，不能死循环" classname="com.quick.app.torque.usb.FtdiBaudTest" time="0.0"/>
   <testcase name="剥掉每包开头的 2 个状态字节" classname="com.quick.app.torque.usb.FtdiBaudTest" time="0.0"/>
   <testcase name="非精确档能被识别出来（诊断页要显示「近似 + 实际值」）" classname="com.quick.app.torque.usb.FtdiBaudTest" time="0.0"/>
   <testcase name="整数部分占低 14 位 —— 低位不会被小数编码撞掉" classname="com.quick.app.torque.usb.FtdiBaudTest" time="0.0"/>
   <testcase name="两个 64 字节整包 —— 第二包开头的 01 60 也要剥掉" classname="com.quick.app.torque.usb.FtdiBaudTest" time="0.0"/>
-  <testcase name="只有状态没有数据的包 —— 返回空，不当成数据" classname="com.quick.app.torque.usb.FtdiBaudTest" time="0.001"/>
+  <testcase name="只有状态没有数据的包 —— 返回空，不当成数据" classname="com.quick.app.torque.usb.FtdiBaudTest" time="0.0"/>
   <testcase name="8N2 的 wValue = 0x1008" classname="com.quick.app.torque.usb.FtdiBaudTest" time="0.0"/>
   <testcase name="按连接自己的包长剥（不是写死 64）" classname="com.quick.app.torque.usb.FtdiBaudTest" time="0.0"/>
-  <testcase name="恰好 3 字节的包 —— 只剩 1 个有效字节" classname="com.quick.app.torque.usb.FtdiBaudTest" time="0.0"/>
+  <testcase name="恰好 3 字节的包 —— 只剩 1 个有效字节" classname="com.quick.app.torque.usb.FtdiBaudTest" time="0.001"/>
   <testcase name="偏差只向「更快」的一侧 —— 不会把设备拖慢" classname="com.quick.app.torque.usb.FtdiBaudTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
